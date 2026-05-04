@@ -167,7 +167,13 @@ http://localhost:3000
 * User authentication
 * Booking system
 * Payment gateway
-* Admin dashboard 
+* Admin dashboard
+
+### Live deployment link 
+https://gym-website-react-iota.vercel.app/
+
+### Screenshots
+
 
 
 
