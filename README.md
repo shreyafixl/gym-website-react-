@@ -172,11 +172,6 @@ http://localhost:3000
 ### Live deployment link 
 https://gym-website-react-iota.vercel.app/
 
-### Screenshots
-
-
-
-
 ### 👨‍💻 Author
 
 Shreya jain
