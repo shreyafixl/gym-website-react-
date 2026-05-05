@@ -1,5 +1,7 @@
-.ad-layout{display:flex;min-height:100vh;background:var(--bg-primary)}
-.ad-sidebar{width:240px;min-height:100vh;background:var(--bg-secondary);border-right:1px solid var(--border-color);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:500;transition:transform .3s}
+/* Layout root: full viewport, no page scroll */
+.ad-layout{display:flex;height:100vh;overflow:hidden;background:var(--bg-primary)}
+/* Sidebar: fixed to left, full height */
+.ad-sidebar{width:240px;height:100vh;background:var(--bg-secondary);border-right:1px solid var(--border-color);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:600;transition:transform .3s;overflow-y:auto}
 .ad-sidebar-brand{padding:16px 20px;font-size:1.15rem;font-weight:800;color:var(--accent);border-bottom:1px solid var(--border-color)}
 .ad-sidebar-brand span{font-size:.65rem;background:rgba(139,92,246,.15);color:#8b5cf6;padding:2px 8px;border-radius:50px;margin-left:6px;font-weight:700}
 .ad-sidebar-user{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border-color)}
@@ -10,13 +12,17 @@
 .ad-nav-item:hover{background:rgba(139,92,246,.08);color:#8b5cf6}
 .ad-nav-active{background:rgba(139,92,246,.12)!important;color:#8b5cf6!important;border-left-color:#8b5cf6!important;font-weight:700!important}
 .ad-sidebar-foot{padding:8px 0;border-top:1px solid var(--border-color)}
-.ad-main{flex:1;margin-left:240px;display:flex;flex-direction:column}
-.ad-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;background:var(--bg-secondary);border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:100}
+/* Main area: offset by sidebar, fills remaining space */
+.ad-main{flex:1;margin-left:240px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+/* Topbar: fixed at top, aligned next to sidebar */
+.ad-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;background:var(--bg-secondary);border-bottom:1px solid var(--border-color);position:fixed;top:0;left:240px;right:0;z-index:500;flex-shrink:0}
 .ad-menu-btn{display:none;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-primary)}
 .ad-topbar-title{font-size:.95rem;font-weight:700;color:var(--text-primary)}
 .ad-topbar-right{display:flex;align-items:center;gap:12px;font-size:1.1rem}
-.ad-content{padding:24px;flex:1}
-.ad-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:499}
+/* Content: only this area scrolls, padded below fixed topbar */
+.ad-content{padding:24px;flex:1;overflow-y:auto;margin-top:60px}
+/* Overlay for mobile sidebar */
+.ad-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:599}
 .ad-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;font-weight:800;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ad-avatar-sm{width:30px;height:30px;font-size:.65rem}
 .ad-section{display:flex;flex-direction:column;gap:18px}
@@ -81,6 +87,8 @@
   .ad-sidebar-open{transform:translateX(0)}
   .ad-overlay{display:block}
   .ad-main{margin-left:0}
+  /* Topbar spans full width on mobile */
+  .ad-topbar{left:0}
   .ad-menu-btn{display:block}
   .ad-kpi-grid{grid-template-columns:repeat(2,1fr)}
   .ad-two-col{grid-template-columns:1fr}
@@ -88,4 +96,52 @@
 @media(max-width:600px){
   .ad-kpi-grid{grid-template-columns:1fr 1fr}
   .ad-content{padding:14px}
+}
+
+/* ── Extra styles for full Admin Dashboard ── */
+.ad-table-wrap{overflow-x:auto}
+.ad-filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ad-filter-label{font-size:.75rem;color:var(--text-secondary);font-weight:600;white-space:nowrap}
+
+/* Staff cards */
+.ad-staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.ad-staff-card{display:flex;flex-direction:column}
+.ad-staff-header{display:flex;align-items:center;gap:12px}
+.ad-staff-stats{display:flex;gap:16px;margin-top:4px}
+.ad-staff-stats div{display:flex;flex-direction:column;align-items:center}
+.ad-staff-stats strong{font-size:.95rem;font-weight:800;color:var(--text-primary)}
+.ad-staff-stats span{font-size:.68rem;color:var(--text-secondary)}
+
+/* Class cards */
+.ad-class-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.ad-class-card{display:flex;flex-direction:column;gap:10px}
+.ad-class-header{display:flex;justify-content:space-between;align-items:flex-start}
+.ad-class-header strong{display:block;font-size:.95rem;font-weight:700;color:var(--text-primary)}
+.ad-class-cat{display:inline-block;font-size:.68rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.ad-class-meta{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--text-secondary)}
+.ad-class-fill{margin-top:4px}
+
+/* Member detail modal */
+.ad-member-detail-grid{display:flex;flex-direction:column;gap:8px}
+.ad-detail-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:.85rem}
+.ad-detail-row:last-child{border-bottom:none}
+.ad-detail-label{color:var(--text-secondary);font-weight:600}
+.ad-detail-val{color:var(--text-primary);font-weight:500}
+
+/* Orange accent override for admin (matches burnt orange theme) */
+.ad-nav-item:hover{background:rgba(232,98,42,.08);color:var(--accent)}
+.ad-nav-active{background:rgba(232,98,42,.12)!important;color:var(--accent)!important;border-left-color:var(--accent)!important;font-weight:700!important}
+.ad-input:focus{border-color:var(--accent)}
+.ad-filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ad-filter-active{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important}
+.ad-link-btn{color:var(--accent)}
+.ad-table th{color:var(--accent)}
+.ad-sidebar-user span{color:var(--accent)}
+.ad-sidebar-brand span{background:rgba(232,98,42,.15);color:var(--accent)}
+.ad-kpi-card small{color:var(--accent)}
+
+@media(max-width:600px){
+  .ad-staff-grid{grid-template-columns:1fr}
+  .ad-class-grid{grid-template-columns:1fr}
+  .ad-filter-group{gap:4px}
 }

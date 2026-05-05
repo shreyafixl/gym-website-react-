@@ -1,8 +1,11 @@
 /* ============================================
    TRAINER DASHBOARD
    ============================================ */
-.td-layout { display:flex; min-height:100vh; background:var(--bg-primary); }
-.td-sidebar { width:250px; min-height:100vh; background:var(--bg-secondary); border-right:1px solid var(--border-color); display:flex; flex-direction:column; position:fixed; top:0; left:0; z-index:500; transition:transform .3s; }
+/* ── Layout root: full viewport, no page scroll ── */
+.td-layout { display:flex; height:100vh; overflow:hidden; background:var(--bg-primary); }
+
+/* ── Sidebar: fixed to the left edge, full height ── */
+.td-sidebar { width:250px; height:100vh; background:var(--bg-secondary); border-right:1px solid var(--border-color); display:flex; flex-direction:column; position:fixed; top:0; left:0; z-index:600; transition:transform .3s; overflow-y:auto; }
 .td-sidebar-brand { padding:18px 20px; font-size:1.2rem; font-weight:800; color:var(--accent); border-bottom:1px solid var(--border-color); }
 .td-sidebar-brand span { font-size:.7rem; background:rgba(249,115,22,.15); color:var(--accent); padding:2px 8px; border-radius:50px; margin-left:6px; font-weight:700; }
 .td-sidebar-user { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--border-color); }
@@ -13,13 +16,20 @@
 .td-nav-item:hover { background:rgba(249,115,22,.08); color:var(--accent); }
 .td-nav-active { background:rgba(249,115,22,.12)!important; color:var(--accent)!important; border-left-color:var(--accent)!important; font-weight:700!important; }
 .td-sidebar-foot { padding:8px 0; border-top:1px solid var(--border-color); }
-.td-main { flex:1; margin-left:250px; display:flex; flex-direction:column; }
-.td-topbar { display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:60px; background:var(--bg-secondary); border-bottom:1px solid var(--border-color); position:sticky; top:0; z-index:100; }
+/* ── Main area: offset by sidebar width, fills remaining space ── */
+.td-main { flex:1; margin-left:250px; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+
+/* ── Topbar: fixed at top, aligned next to sidebar ── */
+.td-topbar { display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:60px; background:var(--bg-secondary); border-bottom:1px solid var(--border-color); position:fixed; top:0; left:250px; right:0; z-index:500; flex-shrink:0; }
 .td-menu-btn { display:none; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-primary); }
 .td-topbar-title { font-size:1rem; font-weight:700; color:var(--text-primary); }
 .td-topbar-right { display:flex; align-items:center; gap:12px; font-size:1.1rem; }
-.td-content { padding:24px; flex:1; }
-.td-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:499; }
+
+/* ── Content: only this area scrolls, padded below fixed topbar ── */
+.td-content { padding:24px; flex:1; overflow-y:auto; margin-top:60px; }
+
+/* ── Overlay for mobile sidebar ── */
+.td-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:599; }
 .td-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; font-weight:800; font-size:.82rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .td-avatar-sm { width:32px; height:32px; font-size:.7rem; }
 
@@ -208,6 +218,8 @@
   .td-sidebar-open { transform:translateX(0); }
   .td-overlay { display:block; }
   .td-main { margin-left:0; }
+  /* Topbar spans full width on mobile */
+  .td-topbar { left:0; }
   .td-menu-btn { display:block; }
   .td-two-col { grid-template-columns:1fr; }
   .td-kpi-grid { grid-template-columns:repeat(2,1fr); }

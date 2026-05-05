@@ -3,22 +3,24 @@
    ============================================ */
 .db-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--bg-primary);
 }
 
-/* -- Sidebar -- */
+/* -- Sidebar: fixed to left, full height -- */
 .db-sidebar {
   width: 260px;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   position: fixed;
   top: 0; left: 0;
-  z-index: 500;
+  z-index: 600;
   transition: transform 0.3s ease;
+  overflow-y: auto;
 }
 .db-sidebar-brand {
   padding: 20px 24px 16px;
@@ -84,14 +86,17 @@
   border-top: 1px solid var(--border-color);
 }
 
-/* -- Main -- */
+/* -- Main area: offset by sidebar, fills remaining space -- */
 .db-main {
   flex: 1;
   margin-left: 260px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
+
+/* -- Topbar: fixed at top, aligned next to sidebar -- */
 .db-topbar {
   display: flex;
   align-items: center;
@@ -100,9 +105,12 @@
   height: 64px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 260px;
+  right: 0;
+  z-index: 500;
+  flex-shrink: 0;
 }
 .db-menu-btn {
   display: none;
@@ -128,16 +136,21 @@
   font-size: 1.2rem;
   cursor: pointer;
 }
+/* -- Content: only this area scrolls, padded below fixed topbar -- */
 .db-content {
   padding: 28px;
   flex: 1;
+  overflow-y: auto;
+  margin-top: 64px;
 }
+
+/* -- Overlay for mobile sidebar -- */
 .db-overlay {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 499;
+  z-index: 599;
 }
 
 /* -- Avatar -- */
@@ -768,6 +781,8 @@
   .db-sidebar--open { transform: translateX(0); }
   .db-overlay { display: block; }
   .db-main { margin-left: 0; }
+  /* Topbar spans full width on mobile */
+  .db-topbar { left: 0; }
   .db-menu-btn { display: block; }
   .db-cards-row { grid-template-columns: 1fr; }
   .db-billing-row { grid-template-columns: repeat(2,1fr); }

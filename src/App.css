@@ -1,6 +1,6 @@
 /* ============================================
    FITZONE GYM - COMPLETE STYLESHEET
-   Theme: Dark Charcoal + Orange Accent
+   Theme: Burnt Orange + Charcoal
    ============================================ */
 
 /* ============================================
@@ -14,8 +14,8 @@
   --bg-card: #252525;
   --text-primary: #ffffff;
   --text-secondary: #b0b0b0;
-  --accent: #f97316;
-  --accent-hover: #ea580c;
+  --accent: #e8622a;
+  --accent-hover: #d4521f;
   --border-color: #333333;
   --mobile-menu-bg: #0a0a0a;
   --input-bg: #1a1a1a;
@@ -30,8 +30,8 @@
   --bg-card: #ffffff;
   --text-primary: #111111;
   --text-secondary: #555555;
-  --accent: #f97316;
-  --accent-hover: #ea580c;
+  --accent: #e8622a;
+  --accent-hover: #d4521f;
   --border-color: #e0e0e0;
   --mobile-menu-bg: #ffffff;
   --input-bg: #f0f0f0;
@@ -126,7 +126,7 @@ address {
   background-color: var(--accent-hover);
   border-color: var(--accent-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 6px 20px rgba(232, 98, 42, 0.4);
 }
 
 .btn-secondary {
@@ -256,7 +256,7 @@ address {
 .nav-link:hover,
 .nav-link.active {
   color: var(--accent);
-  background-color: rgba(249, 115, 22, 0.1);
+  background-color: rgba(232, 98, 42, 0.1);
 }
 
 .navbar-cta {
@@ -275,7 +275,7 @@ address {
 .navbar-cta:hover {
   background-color: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 4px 14px rgba(232, 98, 42, 0.4);
 }
 
 /* Hamburger */
@@ -368,9 +368,9 @@ address {
 
 .hero-badge {
   display: inline-block;
-  background-color: rgba(249, 115, 22, 0.15);
-  color: #f97316;
-  border: 1px solid rgba(249, 115, 22, 0.4);
+  background-color: rgba(232, 98, 42, 0.15);
+  color: #e8622a;
+  border: 1px solid rgba(232, 98, 42, 0.4);
   padding: 6px 16px;
   border-radius: 50px;
   font-size: 0.85rem;
@@ -489,7 +489,7 @@ address {
 .benefit-card:hover {
   border-color: var(--accent);
   transform: translateY(-8px);
-  box-shadow: 0 12px 32px rgba(249, 115, 22, 0.15);
+  box-shadow: 0 12px 32px rgba(232, 98, 42, 0.15);
 }
 
 .benefit-icon {
@@ -606,9 +606,9 @@ address {
 }
 
 .benefit-tag {
-  background-color: rgba(249, 115, 22, 0.1);
-  color: #f97316;
-  border: 1px solid rgba(249, 115, 22, 0.25);
+  background-color: rgba(232, 98, 42, 0.1);
+  color: #e8622a;
+  border: 1px solid rgba(232, 98, 42, 0.25);
   padding: 3px 10px;
   border-radius: 50px;
   font-size: 0.72rem;
@@ -641,8 +641,8 @@ address {
 }
 
 .filter-btn--active {
-  background-color: #f97316;
-  border-color: #f97316;
+  background-color: #e8622a;
+  border-color: #e8622a;
   color: #ffffff;
 }
 
@@ -953,7 +953,7 @@ address {
 .pricing-card:hover {
   border-color: var(--accent);
   transform: translateY(-6px);
-  box-shadow: 0 12px 30px rgba(249, 115, 22, 0.12);
+  box-shadow: 0 12px 30px rgba(232, 98, 42, 0.12);
 }
 
 .pricing-card--popular {
@@ -1273,7 +1273,7 @@ address {
 .footer-socials a:hover {
   color: var(--accent);
   border-color: var(--accent);
-  background-color: rgba(249, 115, 22, 0.08);
+  background-color: rgba(232, 98, 42, 0.08);
 }
 
 /* Link Columns */
@@ -1726,7 +1726,7 @@ address {
 .form-group select:focus,
 .form-group textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  box-shadow: 0 0 0 3px rgba(232, 98, 42, 0.12);
 }
 
 .form-group select option {
@@ -2416,7 +2416,7 @@ address {
 .filter-search:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  box-shadow: 0 0 0 3px rgba(232, 98, 42, 0.1);
 }
 
 .filter-search::placeholder {
@@ -2556,7 +2556,7 @@ address {
 
 .class-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 40px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 12px 40px rgba(232, 98, 42, 0.2);
 }
 
 .trainer-card {
@@ -2565,7 +2565,7 @@ address {
 
 .trainer-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 40px rgba(249, 115, 22, 0.2);
+  box-shadow: 0 12px 40px rgba(232, 98, 42, 0.2);
 }
 
 /* ============================================
@@ -2622,7 +2622,7 @@ address {
 .scroll-to-top:hover {
   background-color: var(--accent-hover);
   transform: translateY(-5px);
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 6px 20px rgba(232, 98, 42, 0.4);
 }
 
 .scroll-to-top:active {
@@ -2637,4 +2637,414 @@ address {
     height: 45px;
     font-size: 1.3rem;
   }
+}
+
+/* ============================================
+   AUTH BUTTONS (Navbar)
+   ============================================ */
+
+.navbar-auth-btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.navbar-login {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-color);
+}
+
+.navbar-login:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.navbar-signup {
+  background-color: var(--accent);
+  color: #ffffff;
+  border: 1.5px solid var(--accent);
+}
+
+.navbar-signup:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(232, 98, 42, 0.35);
+}
+
+/* Mobile auth buttons */
+.mobile-auth-btns {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mobile-auth-btns .navbar-auth-btn {
+  flex: 1;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+}
+
+/* ============================================
+   AUTH MODAL
+   ============================================ */
+
+.auth-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Tab switcher */
+.auth-tabs {
+  display: flex;
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  padding: 4px;
+  gap: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 9px 0;
+  border: none;
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.auth-tab--active {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.auth-tab:not(.auth-tab--active):hover {
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+}
+
+/* Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.auth-input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  outline: none;
+  width: 100%;
+}
+
+.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(232, 98, 42, 0.15);
+}
+
+.auth-input--error {
+  border-color: #ef4444;
+}
+
+.auth-input--error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.auth-error {
+  font-size: 0.78rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.auth-submit {
+  margin-top: 4px;
+}
+
+.auth-switch-text {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.auth-switch-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.auth-switch-link:hover {
+  color: var(--accent-hover);
+}
+
+/* Success state */
+.auth-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.auth-success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  font-size: 1.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-success h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.auth-success p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+/* Narrow the auth modal — it doesn't need 700px */
+.modal-content:has(.auth-modal) {
+  max-width: 440px;
+}
+
+@media (max-width: 768px) {
+  .mobile-auth-btns {
+    display: flex;
+  }
+}
+
+/* ============================================
+   LOGIN PAGE
+   ============================================ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background:
+    linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.85)),
+    url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1600&q=80')
+    center / cover no-repeat;
+}
+
+.login-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.login-logo-icon {
+  font-size: 2rem;
+}
+
+.login-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 4px 0 6px;
+}
+
+.login-subtitle {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+}
+
+.login-demo-hints {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 1.5rem;
+}
+
+.login-demo-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.login-demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.login-demo-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.login-demo-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background-color: rgba(232, 98, 42, 0.08);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.login-submit {
+  margin-top: 4px;
+}
+
+.login-footer-note {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 1.25rem;
+}
+
+/* ── Navbar user state ── */
+.navbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.navbar-user-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.navbar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.navbar-username {
+  white-space: nowrap;
+}
+
+/* Demo hint inside auth modal */
+.auth-demo-hint {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.auth-demo-hint strong {
+  color: var(--accent);
+}
+
+/* ── React-icons alignment fix ── */
+.td-nav-icon,
+.sa-nav-icon,
+.ad-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+}
+
+.td-kpi-icon svg,
+.sa-kpi-icon svg,
+.ad-kpi-icon svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.td-nav-item svg,
+.sa-nav-item svg,
+.ad-nav-item svg {
+  flex-shrink: 0;
 }

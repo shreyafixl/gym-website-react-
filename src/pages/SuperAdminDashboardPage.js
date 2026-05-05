@@ -1,48 +1,54 @@
 import { useState, useCallback, memo } from "react";
 import { Link } from "react-router-dom";
+import {
+  FaTachometerAlt, FaUsers, FaCodeBranch, FaFileAlt, FaTags,
+  FaChartLine, FaCog, FaShieldAlt, FaHome, FaUserShield,
+  FaBell, FaDownload, FaPlus, FaEdit, FaTrash, FaMapMarkerAlt,
+  FaMoneyBillWave, FaHeartbeat, FaServer
+} from "react-icons/fa";
 import "../superadmin-dashboard.css";
 
 const NAV = [
-  { id:"overview",  icon:"??", label:"System Overview"   },
-  { id:"users",     icon:"??", label:"User Management"   },
-  { id:"branches",  icon:"??", label:"Branches"          },
-  { id:"content",   icon:"??", label:"Content"           },
-  { id:"plans",     icon:"??", label:"Plans & Pricing"   },
-  { id:"analytics", icon:"??", label:"Analytics"         },
-  { id:"settings",  icon:"??", label:"Settings"          },
-  { id:"audit",     icon:"??", label:"Audit & Security"  },
+  { id:"overview",  icon:<FaTachometerAlt />, label:"System Overview"  },
+  { id:"users",     icon:<FaUsers />,          label:"User Management"  },
+  { id:"branches",  icon:<FaCodeBranch />,     label:"Branches"         },
+  { id:"content",   icon:<FaFileAlt />,        label:"Content"          },
+  { id:"plans",     icon:<FaTags />,           label:"Plans & Pricing"  },
+  { id:"analytics", icon:<FaChartLine />,      label:"Analytics"        },
+  { id:"settings",  icon:<FaCog />,            label:"Settings"         },
+  { id:"audit",     icon:<FaShieldAlt />,      label:"Audit & Security" },
 ];
 
 const globalStats = [
-  { icon:"??", label:"Total Branches",  value:3,       color:"#f97316" },
-  { icon:"??", label:"Total Members",   value:"3,842", color:"#22c55e" },
-  { icon:"??", label:"Total Revenue",   value:"$142k", color:"#8b5cf6" },
-  { icon:"??", label:"Growth Rate",     value:"+18%",  color:"#3b82f6" },
-  { icon:"???", label:"Total Trainers",  value:24,      color:"#f59e0b" },
-  { icon:"?", label:"Platform Health", value:"99.8%", color:"#22c55e" },
+  { icon:<FaCodeBranch />, label:"Total Branches",  value:3,       color:"#e8622a" },
+  { icon:<FaUsers />,      label:"Total Members",   value:"3,842", color:"#22c55e" },
+  { icon:<FaMoneyBillWave />,label:"Total Revenue", value:"$142k", color:"#8b5cf6" },
+  { icon:<FaChartLine />,  label:"Growth Rate",     value:"+18%",  color:"#3b82f6" },
+  { icon:<FaTachometerAlt />,label:"Total Trainers",value:24,      color:"#f59e0b" },
+  { icon:<FaHeartbeat />,  label:"Platform Health", value:"99.8%", color:"#22c55e" },
 ];
 
 const branches = [
-  { id:1, name:"FitZone Main",    city:"Mumbai",    members:1247, revenue:"$48.2k", trainers:9,  status:"active"   },
-  { id:2, name:"FitZone North",   city:"Delhi",     members:1089, revenue:"$41.5k", trainers:8,  status:"active"   },
-  { id:3, name:"FitZone South",   city:"Bangalore", members:506,  revenue:"$19.8k", trainers:5,  status:"active"   },
-  { id:4, name:"FitZone West",    city:"Pune",      members:0,    revenue:"$0",     trainers:0,  status:"planned"  },
+  { id:1, name:"FitZone Main",  city:"Mumbai",    members:1247, revenue:"$48.2k", trainers:9, status:"active"  },
+  { id:2, name:"FitZone North", city:"Delhi",     members:1089, revenue:"$41.5k", trainers:8, status:"active"  },
+  { id:3, name:"FitZone South", city:"Bangalore", members:506,  revenue:"$19.8k", trainers:5, status:"active"  },
+  { id:4, name:"FitZone West",  city:"Pune",      members:0,    revenue:"$0",     trainers:0, status:"planned" },
 ];
 
 const users = [
-  { id:1, name:"Aryan Mehta",   email:"aryan@email.com",  role:"member",     branch:"Main",  lastLogin:"Today",    status:"active"   },
-  { id:2, name:"Vikram Singh",  email:"vikram@email.com", role:"trainer",    branch:"Main",  lastLogin:"Today",    status:"active"   },
-  { id:3, name:"Rajesh Kumar",  email:"rajesh@email.com", role:"admin",      branch:"Main",  lastLogin:"Yesterday",status:"active"   },
-  { id:4, name:"Priya Sharma",  email:"priya@email.com",  role:"member",     branch:"North", lastLogin:"2 days ago",status:"active"  },
-  { id:5, name:"Amit Patel",    email:"amit@email.com",   role:"member",     branch:"Main",  lastLogin:"1 week ago",status:"inactive"},
+  { id:1, name:"Aryan Mehta",  email:"aryan@email.com",  role:"member",     branch:"Main",  lastLogin:"Today",     status:"active"   },
+  { id:2, name:"Vikram Singh", email:"vikram@email.com", role:"trainer",    branch:"Main",  lastLogin:"Today",     status:"active"   },
+  { id:3, name:"Rajesh Kumar", email:"rajesh@email.com", role:"admin",      branch:"Main",  lastLogin:"Yesterday", status:"active"   },
+  { id:4, name:"Priya Sharma", email:"priya@email.com",  role:"member",     branch:"North", lastLogin:"2 days ago",status:"active"   },
+  { id:5, name:"Amit Patel",   email:"amit@email.com",   role:"member",     branch:"Main",  lastLogin:"1 week ago",status:"inactive" },
 ];
 
 const auditLog = [
-  { time:"10:32 AM", user:"Rajesh Kumar", action:"Updated pricing plan - Half-Yearly",  ip:"192.168.1.10" },
-  { time:"9:15 AM",  user:"Vikram Singh", action:"Added new client - Deepak Singh",     ip:"192.168.1.22" },
-  { time:"8:50 AM",  user:"System",       action:"Automated backup completed",           ip:"localhost"    },
-  { time:"Yesterday",user:"Super Admin",  action:"Created new branch - FitZone West",   ip:"192.168.1.1"  },
-  { time:"Yesterday",user:"Rajesh Kumar", action:"Suspended member - Karan Mehta",      ip:"192.168.1.10" },
+  { time:"10:32 AM", user:"Rajesh Kumar", action:"Updated pricing plan - Half-Yearly", ip:"192.168.1.10" },
+  { time:"9:15 AM",  user:"Vikram Singh", action:"Added new client - Deepak Singh",    ip:"192.168.1.22" },
+  { time:"8:50 AM",  user:"System",       action:"Automated backup completed",          ip:"localhost"    },
+  { time:"Yesterday",user:"Super Admin",  action:"Created new branch - FitZone West",  ip:"192.168.1.1"  },
+  { time:"Yesterday",user:"Rajesh Kumar", action:"Suspended member - Karan Mehta",     ip:"192.168.1.10" },
 ];
 
 const SABadge = memo(({ s }) => {
@@ -65,7 +71,7 @@ function SAOverview() {
       </div>
       <div className="sa-two-col">
         <div className="sa-card">
-          <div className="sa-card-head"><h3>?? Global Revenue Trend</h3></div>
+          <div className="sa-card-head"><h3><FaMoneyBillWave style={{marginRight:6}} />Global Revenue Trend</h3></div>
           <div className="sa-bar-chart">
             {rev.map((v,i)=>(
               <div className="sa-bar-col" key={i}>
@@ -77,24 +83,23 @@ function SAOverview() {
           </div>
         </div>
         <div className="sa-card">
-          <div className="sa-card-head"><h3>?? Branch Performance</h3></div>
+          <div className="sa-card-head"><h3><FaCodeBranch style={{marginRight:6}} />Branch Performance</h3></div>
           {branches.filter(b=>b.status==="active").map(b=>(
             <div className="sa-branch-row" key={b.id}>
               <div><strong>{b.name}</strong><span>{b.city}</span></div>
               <div className="sa-branch-stats">
-                <span>?? {b.members}</span>
-                <span>?? {b.revenue}</span>
+                <span><FaUsers style={{marginRight:4}} />{b.members}</span>
+                <span><FaMoneyBillWave style={{marginRight:4}} />{b.revenue}</span>
                 <SABadge s={b.status} />
               </div>
             </div>
           ))}
         </div>
       </div>
-      {/* Platform Health */}
       <div className="sa-card">
-        <div className="sa-card-head"><h3>??? Platform Health</h3></div>
+        <div className="sa-card-head"><h3><FaServer style={{marginRight:6}} />Platform Health</h3></div>
         <div className="sa-health-grid">
-          {[["API Server","99.9%","#22c55e"],["Database","99.8%","#22c55e"],["CDN","100%","#22c55e"],["Email Service","98.2%","#f97316"],["SMS Gateway","97.5%","#f97316"],["Backup System","100%","#22c55e"]].map(([s,v,c])=>(
+          {[["API Server","99.9%","#22c55e"],["Database","99.8%","#22c55e"],["CDN","100%","#22c55e"],["Email Service","98.2%","#e8622a"],["SMS Gateway","97.5%","#e8622a"],["Backup System","100%","#22c55e"]].map(([s,v,c])=>(
             <div className="sa-health-item" key={s}>
               <div className="sa-health-dot" style={{background:c}} />
               <span>{s}</span>
@@ -116,14 +121,15 @@ function SAUsers() {
   );
   return (
     <div className="sa-section">
-      <div className="sa-section-head"><h2>?? User Management</h2>
+      <div className="sa-section-head">
+        <h2><FaUsers style={{marginRight:8}} />User Management</h2>
         <div style={{display:"flex",gap:"8px"}}>
-          <button className="btn btn-primary sa-btn-sm">+ Add User</button>
-          <button className="btn btn-outline sa-btn-sm">? Export</button>
+          <button className="btn btn-primary sa-btn-sm"><FaPlus style={{marginRight:6}} />Add User</button>
+          <button className="btn btn-outline sa-btn-sm"><FaDownload style={{marginRight:6}} />Export</button>
         </div>
       </div>
       <div className="sa-filters">
-        <input className="sa-input" placeholder="?? Search users..." value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="sa-input" placeholder="Search users..." value={search} onChange={e=>setSearch(e.target.value)} />
         {["all","member","trainer","admin","superadmin"].map(r=>(
           <button key={r} className={`sa-filter-btn ${roleFilter===r?"sa-filter-active":""}`} onClick={()=>setRoleFilter(r)}>{r}</button>
         ))}
@@ -142,9 +148,9 @@ function SAUsers() {
                 <td><SABadge s={u.status} /></td>
                 <td>
                   <div style={{display:"flex",gap:"6px"}}>
-                    <button className="sa-link-btn">Edit</button>
+                    <button className="sa-link-btn"><FaEdit /></button>
                     <button className="sa-link-btn">Role</button>
-                    <button className="sa-link-btn" style={{color:"#ef4444"}}>Delete</button>
+                    <button className="sa-link-btn" style={{color:"#ef4444"}}><FaTrash /></button>
                   </div>
                 </td>
               </tr>
@@ -159,7 +165,10 @@ function SAUsers() {
 function SABranches() {
   return (
     <div className="sa-section">
-      <div className="sa-section-head"><h2>?? Branch Management</h2><button className="btn btn-primary sa-btn-sm">+ Add Branch</button></div>
+      <div className="sa-section-head">
+        <h2><FaCodeBranch style={{marginRight:8}} />Branch Management</h2>
+        <button className="btn btn-primary sa-btn-sm"><FaPlus style={{marginRight:6}} />Add Branch</button>
+      </div>
       <div className="sa-branches-grid">
         {branches.map(b=>(
           <div className="sa-branch-card sa-card" key={b.id}>
@@ -167,7 +176,7 @@ function SABranches() {
               <h4>{b.name}</h4>
               <SABadge s={b.status} />
             </div>
-            <p className="sa-branch-city">?? {b.city}</p>
+            <p className="sa-branch-city"><FaMapMarkerAlt style={{marginRight:4}} />{b.city}</p>
             <div className="sa-branch-kpis">
               <div><strong>{b.members}</strong><span>Members</span></div>
               <div><strong>{b.revenue}</strong><span>Revenue</span></div>
@@ -175,7 +184,7 @@ function SABranches() {
             </div>
             <div style={{display:"flex",gap:"8px",marginTop:"12px"}}>
               <button className="btn btn-outline sa-btn-sm">View</button>
-              <button className="btn btn-outline sa-btn-sm">Edit</button>
+              <button className="btn btn-outline sa-btn-sm"><FaEdit style={{marginRight:4}} />Edit</button>
             </div>
           </div>
         ))}
@@ -187,7 +196,7 @@ function SABranches() {
 function SASettings() {
   return (
     <div className="sa-section">
-      <div className="sa-section-head"><h2>?? System Settings</h2></div>
+      <div className="sa-section-head"><h2><FaCog style={{marginRight:8}} />System Settings</h2></div>
       <div className="sa-two-col">
         <div className="sa-card">
           <div className="sa-card-head"><h3>General Settings</h3></div>
@@ -207,13 +216,13 @@ function SASettings() {
         </div>
       </div>
       <div className="sa-card">
-        <div className="sa-card-head"><h3>Backup & Restore</h3></div>
+        <div className="sa-card-head"><h3><FaServer style={{marginRight:6}} />Backup & Restore</h3></div>
         <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
-          <button className="btn btn-primary sa-btn-sm">?? Create Backup</button>
-          <button className="btn btn-outline sa-btn-sm">?? Restore Backup</button>
-          <button className="btn btn-outline sa-btn-sm">? Download Backup</button>
+          <button className="btn btn-primary sa-btn-sm">Create Backup</button>
+          <button className="btn btn-outline sa-btn-sm">Restore Backup</button>
+          <button className="btn btn-outline sa-btn-sm"><FaDownload style={{marginRight:6}} />Download</button>
         </div>
-        <p style={{fontSize:".8rem",color:"var(--text-secondary)",marginTop:"10px"}}>Last backup: Today at 3:00 AM � Size: 2.4 GB</p>
+        <p style={{fontSize:".8rem",color:"var(--text-secondary)",marginTop:"10px"}}>Last backup: Today at 3:00 AM · Size: 2.4 GB</p>
       </div>
     </div>
   );
@@ -222,14 +231,24 @@ function SASettings() {
 function SAAudit() {
   return (
     <div className="sa-section">
-      <div className="sa-section-head"><h2>?? Audit & Security</h2></div>
+      <div className="sa-section-head"><h2><FaShieldAlt style={{marginRight:8}} />Audit & Security</h2></div>
       <div className="sa-kpi-grid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
-        {[{icon:"??",label:"Failed Logins (24h)",value:3,color:"#ef4444"},{icon:"?",label:"Successful Logins",value:142,color:"#22c55e"},{icon:"??",label:"Audit Events Today",value:28,color:"#3b82f6"}].map((k,i)=>(
-          <div className="sa-kpi-card" key={i}><div className="sa-kpi-icon" style={{background:k.color+"22"}}>{k.icon}</div><div><strong>{k.value}</strong><span>{k.label}</span></div></div>
+        {[
+          {icon:<FaShieldAlt />, label:"Failed Logins (24h)",  value:3,   color:"#ef4444"},
+          {icon:<FaUsers />,     label:"Successful Logins",    value:142, color:"#22c55e"},
+          {icon:<FaFileAlt />,   label:"Audit Events Today",   value:28,  color:"#3b82f6"},
+        ].map((k,i)=>(
+          <div className="sa-kpi-card" key={i}>
+            <div className="sa-kpi-icon" style={{background:k.color+"22"}}>{k.icon}</div>
+            <div><strong>{k.value}</strong><span>{k.label}</span></div>
+          </div>
         ))}
       </div>
       <div className="sa-card">
-        <div className="sa-card-head"><h3>Audit Trail</h3><button className="btn btn-outline sa-btn-sm">? Export Log</button></div>
+        <div className="sa-card-head">
+          <h3>Audit Trail</h3>
+          <button className="btn btn-outline sa-btn-sm"><FaDownload style={{marginRight:6}} />Export Log</button>
+        </div>
         <table className="sa-table">
           <thead><tr><th>Time</th><th>User</th><th>Action</th><th>IP Address</th></tr></thead>
           <tbody>
@@ -252,7 +271,8 @@ const PlaceholderSA = ({title}) => (
   <div className="sa-section">
     <div className="sa-section-head"><h2>{title}</h2></div>
     <div className="sa-card" style={{textAlign:"center",padding:"60px",color:"var(--text-secondary)"}}>
-      <div style={{fontSize:"3rem",marginBottom:"12px"}}>??</div><p>Under development.</p>
+      <FaCog style={{fontSize:"3rem",marginBottom:"12px",opacity:.4}} />
+      <p>Under development.</p>
     </div>
   </div>
 );
@@ -261,11 +281,22 @@ export default function SuperAdminDashboardPage() {
   const [active, setActive] = useState("overview");
   const [open, setOpen] = useState(false);
   const go = useCallback(id=>{ setActive(id); setOpen(false); },[]);
-  const sections = { overview:<SAOverview/>, users:<SAUsers/>, branches:<SABranches/>, content:<PlaceholderSA title="?? Content Management"/>, plans:<PlaceholderSA title="?? Plans & Pricing"/>, analytics:<PlaceholderSA title="?? Advanced Analytics"/>, settings:<SASettings/>, audit:<SAAudit/> };
+
+  const sections = {
+    overview: <SAOverview />,
+    users:    <SAUsers />,
+    branches: <SABranches />,
+    content:  <PlaceholderSA title="Content Management" />,
+    plans:    <PlaceholderSA title="Plans & Pricing" />,
+    analytics:<PlaceholderSA title="Advanced Analytics" />,
+    settings: <SASettings />,
+    audit:    <SAAudit />,
+  };
+
   return (
     <div className="sa-layout">
       <aside className={`sa-sidebar ${open?"sa-sidebar-open":""}`}>
-        <div className="sa-sidebar-brand">? FitZone <span>Super Admin</span></div>
+        <div className="sa-sidebar-brand">⚡ FitZone <span>Super Admin</span></div>
         <div className="sa-sidebar-user">
           <div className="sa-avatar">SA</div>
           <div><strong>Super Admin</strong><span>System Owner</span></div>
@@ -273,21 +304,24 @@ export default function SuperAdminDashboardPage() {
         <nav className="sa-nav">
           {NAV.map(n=>(
             <button key={n.id} className={`sa-nav-item ${active===n.id?"sa-nav-active":""}`} onClick={()=>go(n.id)}>
-              <span>{n.icon}</span><span>{n.label}</span>
+              <span className="sa-nav-icon">{n.icon}</span><span>{n.label}</span>
             </button>
           ))}
         </nav>
         <div className="sa-sidebar-foot">
-          <Link to="/" className="sa-nav-item">? Back to Site</Link>
-          <Link to="/dashboard/admin" className="sa-nav-item">?? Admin View</Link>
+          <Link to="/" className="sa-nav-item"><FaHome style={{marginRight:8}} />Back to Site</Link>
+          <Link to="/dashboard/admin" className="sa-nav-item"><FaUserShield style={{marginRight:8}} />Admin View</Link>
         </div>
       </aside>
       {open && <div className="sa-overlay" onClick={()=>setOpen(false)} />}
       <div className="sa-main">
         <header className="sa-topbar">
-          <button className="sa-menu-btn" onClick={()=>setOpen(true)}>?</button>
-          <span className="sa-topbar-title">Super Admin � Global Control Panel</span>
-          <div className="sa-topbar-right"><span>??</span><div className="sa-avatar sa-avatar-sm">SA</div></div>
+          <button className="sa-menu-btn" onClick={()=>setOpen(true)}>☰</button>
+          <span className="sa-topbar-title">Super Admin · Global Control Panel</span>
+          <div className="sa-topbar-right">
+            <FaBell style={{fontSize:"1.1rem",color:"var(--text-secondary)"}} />
+            <div className="sa-avatar sa-avatar-sm">SA</div>
+          </div>
         </header>
         <main className="sa-content">{sections[active]}</main>
       </div>

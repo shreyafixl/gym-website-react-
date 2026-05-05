@@ -1,34 +1,42 @@
 import { useState, useCallback, useMemo } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
+import AuthModal from "./AuthModal";
+import { useAuth, ROLE_ROUTES } from "../contexts/AuthContext";
 
 function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { user, isLoggedIn, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Memoize navLinks to prevent recreation on every render
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+
+  const openLogin  = useCallback(() => { setAuthMode('login');  setAuthOpen(true); }, []);
+  const openSignup = useCallback(() => { setAuthMode('signup'); setAuthOpen(true); }, []);
+  const closeAuth  = useCallback(() => setAuthOpen(false), []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    navigate('/');
+  }, [logout, navigate]);
+
   const navLinks = useMemo(() => [
-    { to: "/", label: "Home" },
-    { to: "/about", label: "About" },
-    { to: "/classes", label: "Classes" },
-    { to: "/equipment", label: "Equipment" },
-    { to: "/facilities", label: "Facilities" },
-    { to: "/trainers", label: "Trainers" },
-    { to: "/pricing", label: "Pricing" },
-    { to: "/gallery", label: "Gallery" },
-    { to: "/testimonials", label: "Testimonials" },
-    { to: "/faq", label: "FAQ" },
-    { to: "/contact", label: "Contact" },
-    { to: "/dashboard", label: "Dashboard" }
+    { to: "/",            label: "Home"         },
+    { to: "/about",       label: "About"        },
+    { to: "/classes",     label: "Classes"      },
+    { to: "/equipment",   label: "Equipment"    },
+    { to: "/facilities",  label: "Facilities"   },
+    { to: "/trainers",    label: "Trainers"     },
+    { to: "/pricing",     label: "Pricing"      },
+    { to: "/gallery",     label: "Gallery"      },
+    { to: "/testimonials",label: "Testimonials" },
+    { to: "/faq",         label: "FAQ"          },
+    { to: "/contact",     label: "Contact"      },
   ], []);
 
-  // Memoize callbacks to prevent unnecessary re-renders
-  const toggleMenu = useCallback(() => {
-    setMenuOpen(prev => !prev);
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setMenuOpen(false);
-  }, []);
+  const toggleMenu = useCallback(() => setMenuOpen(p => !p), []);
+  const closeMenu  = useCallback(() => setMenuOpen(false), []);
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
@@ -36,9 +44,9 @@ function Navbar() {
         <span className="logo-icon">⚡</span> FitZone
       </Link>
 
-      {/* Desktop nav */}
+      {/* Desktop nav links */}
       <ul className="navbar-links">
-        {navLinks.map((link) => (
+        {navLinks.map(link => (
           <li key={link.to}>
             <NavLink
               to={link.to}
@@ -51,11 +59,26 @@ function Navbar() {
         ))}
       </ul>
 
+      {/* Desktop right-side actions */}
       <div className="navbar-actions">
+        {isLoggedIn ? (
+          <>
+            <Link to={ROLE_ROUTES[user.role] || '/dashboard'} className="navbar-user-btn">
+              <span className="navbar-avatar">{user.avatar}</span>
+              <span className="navbar-username">{user.name.split(' ')[0]}</span>
+            </Link>
+            <button className="navbar-auth-btn navbar-login" onClick={handleLogout}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="navbar-auth-btn navbar-login"  onClick={openLogin}>Login</button>
+            <button className="navbar-auth-btn navbar-signup" onClick={openSignup}>Sign Up</button>
+          </>
+        )}
         <ThemeToggle />
-        <Link to="/contact" className="navbar-cta">
-          Join Now
-        </Link>
+        <Link to="/contact" className="navbar-cta">Join Now</Link>
       </div>
 
       {/* Hamburger */}
@@ -73,7 +96,7 @@ function Navbar() {
       {/* Mobile menu */}
       <div className={`mobile-menu ${menuOpen ? "mobile-menu--open" : ""}`}>
         <ul>
-          {navLinks.map((link) => (
+          {navLinks.map(link => (
             <li key={link.to}>
               <NavLink
                 to={link.to}
@@ -85,11 +108,45 @@ function Navbar() {
               </NavLink>
             </li>
           ))}
+          {isLoggedIn && (
+            <li>
+              <NavLink
+                to={ROLE_ROUTES[user.role] || '/dashboard'}
+                className="nav-link"
+                onClick={closeMenu}
+              >
+                My Dashboard
+              </NavLink>
+            </li>
+          )}
         </ul>
-        <Link to="/contact" className="navbar-cta mobile-cta" onClick={closeMenu}>
-          Join Now
-        </Link>
+
+        <div className="mobile-auth-btns">
+          {isLoggedIn ? (
+            <button
+              className="navbar-auth-btn navbar-login"
+              style={{ flex: 1 }}
+              onClick={() => { closeMenu(); handleLogout(); }}
+            >
+              Logout
+            </button>
+          ) : (
+            <>
+              <button className="navbar-auth-btn navbar-login"  onClick={() => { closeMenu(); openLogin(); }}>Login</button>
+              <button className="navbar-auth-btn navbar-signup" onClick={() => { closeMenu(); openSignup(); }}>Sign Up</button>
+            </>
+          )}
+        </div>
+
+        {!isLoggedIn && (
+          <Link to="/contact" className="navbar-cta mobile-cta" onClick={closeMenu}>
+            Join Now
+          </Link>
+        )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={authOpen} onClose={closeAuth} defaultMode={authMode} />
     </nav>
   );
 }
