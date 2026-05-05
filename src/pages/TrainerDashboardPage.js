@@ -51,7 +51,7 @@ function TrainerHome({ setSection, setSelectedClient }) {
                 <div className="td-tl-dot" />
                 <div className="td-tl-body">
                   <strong>{s.client}</strong>
-                  <span>{s.type} · {s.duration}</span>
+                  <span>{s.type} ï¿½ {s.duration}</span>
                   <TBadge s={s.status} />
                 </div>
               </div>
@@ -252,7 +252,7 @@ function TrainerClasses() {
           <div className="td-class-item td-card" key={c.id}>
             <div className="td-class-info">
               <h4>{c.name}</h4>
-              <span>?? {c.date} · ? {c.time}</span>
+              <span>?? {c.date} ï¿½ ? {c.time}</span>
               <span>?? {c.enrolled} enrolled</span>
             </div>
             <div className="td-class-attendance">
@@ -465,7 +465,15 @@ export default function TrainerDashboardPage() {
         </div>
         <nav className="td-nav">
           {NAV.map(n=>(
-            <button key={n.id} className={`td-nav-item ${active===n.id||active==="clientProfile"&&n.id==="clients"?"td-nav-active":""}`} onClick={()=>go(n.id)}>
+            <button
+  key={n.id}
+  className={`td-nav-item ${
+    (active === n.id) || (active === "clientProfile" && n.id === "clients")
+      ? "td-nav-active"
+      : ""
+  }`}
+  onClick={() => go(n.id)}
+>
               <span>{n.icon}</span><span>{n.label}</span>
             </button>
           ))}
