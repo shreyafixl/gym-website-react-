@@ -1,9 +1,23 @@
 import { Link } from "react-router-dom";
+import { useScrollAnimation } from "../hooks/useScrollAnimation";
+import { memo } from "react";
+
+// Memoize stat component
+const HeroStat = memo(function HeroStat({ value, label, delay }) {
+  return (
+    <div className="hero-stat" style={{ animationDelay: `${delay}ms` }}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+});
 
 function Hero() {
+  const [ref, isVisible] = useScrollAnimation({ once: true });
+
   return (
-    <section className="hero" aria-label="Hero section">
-      <div className="hero-content">
+    <section className="hero" aria-label="Hero section" ref={ref}>
+      <div className={`hero-content ${isVisible ? 'hero-visible' : ''}`}>
         <span className="hero-badge">🏆 #1 Rated Gym in the City</span>
         <h1 className="hero-title">
           Transform Your Body,<br />
@@ -24,22 +38,10 @@ function Hero() {
         </div>
 
         <div className="hero-stats">
-          <div className="hero-stat">
-            <strong>5,000+</strong>
-            <span>Active Members</span>
-          </div>
-          <div className="hero-stat">
-            <strong>50+</strong>
-            <span>Expert Trainers</span>
-          </div>
-          <div className="hero-stat">
-            <strong>100+</strong>
-            <span>Weekly Classes</span>
-          </div>
-          <div className="hero-stat">
-            <strong>10+</strong>
-            <span>Years of Excellence</span>
-          </div>
+          <HeroStat value="5,000+" label="Active Members" delay={100} />
+          <HeroStat value="50+" label="Expert Trainers" delay={200} />
+          <HeroStat value="100+" label="Weekly Classes" delay={300} />
+          <HeroStat value="10+" label="Years of Excellence" delay={400} />
         </div>
       </div>
     </section>

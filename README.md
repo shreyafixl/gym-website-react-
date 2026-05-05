@@ -1,180 +1,71 @@
-## 📌 Gym Website – React Project
+# Getting Started with Create React App
 
-### 🏋️ Project Overview
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-This project is a **responsive multi-page gym website** built using React. It is designed as a **public-facing landing website** where users can explore gym services, classes, trainers, facilities, pricing, and contact details.
+## Available Scripts
 
-The goal of this project is to simulate a **real-world client website** and practice frontend development skills including UI design, component architecture, routing, and responsive layouts. 
+In the project directory, you can run:
 
+### `npm start`
 
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-### 🚀 Features
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
-* Fully responsive design (mobile, tablet, desktop)
-* Multi-page navigation using React Router
-* Clean and modern UI
-* Reusable React components
-* Data-driven rendering using local JSON/JS arrays
-* Contact form with validation
-* FAQ accordion
-* Class filtering (optional)
-* Smooth UI interactions and animations (optional)
+### `npm test`
 
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
+### `npm run build`
 
-### 📄 Pages Included
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-* Home
-* About
-* Classes
-* Equipment
-* Facilities
-* Trainers
-* Pricing
-* Gallery
-* Testimonials
-* FAQ
-* Contact 
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
+### `npm run eject`
 
-### 🛠️ Tech Stack
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-* React.js
-* React Router
-* CSS / Tailwind CSS / SCSS
-* JavaScript (ES6+)
-* Optional: Framer Motion
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-### 📁 Folder Structure
+## Learn More
 
-src/
-│── components/
-│── pages/
-│── data/
-│── assets/
-│── styles/
-│── utils/
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-Each section is modular and reusable to maintain clean code architecture. 
+### Code Splitting
 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
+### Analyzing the Bundle Size
 
-### 📊 Data Handling
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
-This project does not use a backend. All data is managed using **local JavaScript arrays**, such as:
+### Making a Progressive Web App
 
-* classesData.js
-* equipmentData.js
-* trainersData.js
-* pricingData.js
-* faqData.js 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
+### Advanced Configuration
 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-### ⚙️ Installation & Setup
+### Deployment
 
-1. Clone the repository:
 
-```bash
-git clone https://github.com/your-username/gym-website.git
-```
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-2. Navigate to the project folder:
+### `npm run build` fails to minify
 
-```bash
-cd gym-website
-```
-
-3. Install dependencies:
-
-```bash
-npm install
-```
-
-4. Run the development server:
-
-```bash
-npm start
-```
-
-5. Open in browser:
-
-```
-http://localhost:3000
-```
-
-
-
-### 📱 Responsive Design
-
-* Mobile-first approach
-* Adaptive layouts for all screen sizes
-* No horizontal scrolling
-* Touch-friendly UI elements 
-
-
-
-### ✅ Project Scope
-
-**Included:**
-
-* Public user interface
-* Informational pages
-* Static data rendering
-* Frontend form validation
-
-**Not Included:**
-
-* Admin panel
-* Authentication/Login
-* Payment integration
-* Backend APIs 
-
-
-
-### 🧪 Testing & QA
-
-* Cross-device testing (mobile + desktop)
-* Form validation checks
-* Navigation and routing verification
-* UI consistency and spacing
-* No console errors 
-
-
-
-
-
-
-
-### 🎯 Learning Outcomes
-
-* Building real-world UI with React
-* Component-based architecture
-* Routing and navigation
-* Responsive design principles
-* Clean code practices
-* Project structuring and documentation 
-
-
-
-### 🔮 Future Improvements
-
-* Backend integration
-* User authentication
-* Booking system
-* Payment gateway
-* Admin dashboard
-
-### Live deployment link 
-https://gym-website-react-iota.vercel.app/
-
-### 👨‍💻 Author
-
-Shreya jain
-
-
-
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

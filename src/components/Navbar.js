@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Link, NavLink } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const navLinks = [
+  // Memoize navLinks to prevent recreation on every render
+  const navLinks = useMemo(() => [
     { to: "/", label: "Home" },
     { to: "/about", label: "About" },
     { to: "/classes", label: "Classes" },
@@ -15,8 +17,18 @@ function Navbar() {
     { to: "/gallery", label: "Gallery" },
     { to: "/testimonials", label: "Testimonials" },
     { to: "/faq", label: "FAQ" },
-    { to: "/contact", label: "Contact" }
-  ];
+    { to: "/contact", label: "Contact" },
+    { to: "/dashboard", label: "Dashboard" }
+  ], []);
+
+  // Memoize callbacks to prevent unnecessary re-renders
+  const toggleMenu = useCallback(() => {
+    setMenuOpen(prev => !prev);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
@@ -39,14 +51,17 @@ function Navbar() {
         ))}
       </ul>
 
-      <Link to="/contact" className="navbar-cta">
-        Join Now
-      </Link>
+      <div className="navbar-actions">
+        <ThemeToggle />
+        <Link to="/contact" className="navbar-cta">
+          Join Now
+        </Link>
+      </div>
 
       {/* Hamburger */}
       <button
         className="hamburger"
-        onClick={() => setMenuOpen(!menuOpen)}
+        onClick={toggleMenu}
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
       >
@@ -64,14 +79,14 @@ function Navbar() {
                 to={link.to}
                 className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
                 end={link.to === "/"}
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
               >
                 {link.label}
               </NavLink>
             </li>
           ))}
         </ul>
-        <Link to="/contact" className="navbar-cta mobile-cta" onClick={() => setMenuOpen(false)}>
+        <Link to="/contact" className="navbar-cta mobile-cta" onClick={closeMenu}>
           Join Now
         </Link>
       </div>
