@@ -130,15 +130,31 @@ address {
 }
 
 .btn-secondary {
-  background-color: transparent;
-  color: var(--text-primary);
-  border-color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
 }
 
 .btn-secondary:hover {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
+  background-color: #ffffff;
+  color: #111111;
+  border-color: #ffffff;
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Light mode: ensure btn-secondary is visible on light backgrounds */
+[data-theme="light"] .btn-secondary {
+  background-color: #ffffff;
+  color: #111111;
+  border-color: #cccccc;
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background-color: #f0f0f0;
+  color: #111111;
+  border-color: #999999;
 }
 
 .btn-outline {
