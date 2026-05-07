@@ -1,9 +1,14 @@
 ﻿import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { userData, paymentHistory, offers } from "../data/dashboardData";
 
 export default function DashboardBilling({ tab: initialTab = "payments" }) {
   const [tab, setTab] = useState(initialTab);
+
+  // Sync tab state when prop changes
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
   const [copied, setCopied] = useState(null);
   const pct = Math.round((userData.daysLeft / 180) * 100);
 
@@ -87,4 +92,5 @@ export default function DashboardBilling({ tab: initialTab = "payments" }) {
     </div>
   );
 }
-
+
+

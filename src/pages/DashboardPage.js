@@ -1,6 +1,8 @@
 import { useState, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { userData, notifications } from "../data/dashboardData";
+import { useDashboardTheme } from "../components/DashboardThemeSwitcher";
+import DashboardThemeSwitcher from "../components/DashboardThemeSwitcher";
 import "../dashboard.css";
 
 const DashboardOverview   = lazy(() => import("../dashboard/DashboardOverview"));
@@ -18,39 +20,44 @@ const DashboardNotifications = lazy(() => import("../dashboard/DashboardNotifica
 const DashboardSettings   = lazy(() => import("../dashboard/DashboardSettings"));
 const DashboardReports    = lazy(() => import("../dashboard/DashboardReports"));
 
+// Dashboard is a DIRECT link — no dropdown, no children
+const DASHBOARD_ITEM = { 
+  id: "overview", 
+  icon: "🏠", 
+  label: "Dashboard",
+  color: "#f97316",
+};
+
 const NAV_GROUPS = [
-  { label:"Dashboard", icon:"🏠", items:[
-    { id:"overview", icon:"🏠", label:"Overview" },
-  ]},
-  { label:"Bookings", icon:"📅", items:[
+  { label:"Bookings", icon:"📅", color:"#3b82f6", items:[
     { id:"bookings",        icon:"📅", label:"My Bookings"     },
     { id:"booking-history", icon:"🕐", label:"Booking History" },
     { id:"schedule",        icon:"🗓️", label:"Class Schedule"  },
   ]},
-  { label:"Progress", icon:"📈", items:[
+  { label:"Progress", icon:"📈", color:"#22c55e", items:[
     { id:"progress", icon:"📈", label:"Progress Stats" },
     { id:"goals",    icon:"🎯", label:"My Goals"       },
     { id:"reports",  icon:"📊", label:"Reports"        },
   ]},
-  { label:"Workout", icon:"🏋️", items:[
+  { label:"Workout", icon:"🏋️", color:"#8b5cf6", items:[
     { id:"history",  icon:"🕐", label:"Workout History" },
     { id:"workout",  icon:"💪", label:"Assigned Plans"  },
     { id:"attendance",icon:"✅", label:"Attendance"     },
   ]},
-  { label:"Nutrition", icon:"🥗", items:[
+  { label:"Nutrition", icon:"🥗", color:"#10b981", items:[
     { id:"diet",    icon:"🥗", label:"Diet Plan"    },
     { id:"meals",   icon:"🍽️", label:"Meal Tracker" },
     { id:"water",   icon:"💧", label:"Water Intake" },
   ]},
-  { label:"Trainer", icon:"👤", items:[
+  { label:"Trainer", icon:"👤", color:"#ec4899", items:[
     { id:"trainer", icon:"👤", label:"My Trainer" },
     { id:"chat",    icon:"💬", label:"Chat"        },
   ]},
-  { label:"Billing", icon:"💳", items:[
+  { label:"Billing", icon:"💳", color:"#14b8a6", items:[
     { id:"billing", icon:"💳", label:"Payments"        },
     { id:"offers",  icon:"🎁", label:"Offers & Coupons"},
   ]},
-  { label:"More", icon:"⚙️", items:[
+  { label:"More", icon:"⚙️", color:"#64748b", items:[
     { id:"notifications", icon:"🔔", label:"Notifications" },
     { id:"card",          icon:"🪪", label:"Member Card"   },
     { id:"settings",      icon:"⚙️", label:"Settings"      },
@@ -125,8 +132,9 @@ function NotifBell({ onNav }) {
 
 function Sidebar({ active, onNav, open, onClose }) {
   const activeGroup = NAV_GROUPS.find(g => g.items.some(i => i.id === active));
-  const [expanded, setExpanded] = useState(activeGroup?.label || "Dashboard");
+  const [expanded, setExpanded] = useState(activeGroup?.label || null);
   const [collapsed, setCollapsed] = useState(false);
+  
   const toggle = (label) => {
     if (collapsed) { setCollapsed(false); setExpanded(label); return; }
     setExpanded(p => p === label ? null : label);
@@ -160,42 +168,63 @@ function Sidebar({ active, onNav, open, onClose }) {
         )}
 
         <nav className="db-nav">
-          {NAV_GROUPS.map(group => (
-            <div key={group.label} className="db-nav-group">
-              <button
-                className="db-nav-group-header"
-                onClick={() => toggle(group.label)}
-                title={collapsed ? group.label : undefined}
-              >
-                <span style={{ display:"flex", alignItems:"center", gap: collapsed ? 0 : 10 }}>
-                  <span className="db-nav-group-icon">{group.icon}</span>
-                  {!collapsed && <span>{group.label}</span>}
-                </span>
-                {!collapsed && (
-                  <span className={`db-nav-chevron ${expanded === group.label ? "db-nav-chevron--open" : ""}`}>▾</span>
+          {/* ── Dashboard: direct link, no dropdown ── */}
+          <div className="db-nav-direct">
+            <button
+              className={`db-nav-item db-nav-direct-item ${active === DASHBOARD_ITEM.id ? "db-nav-item--active" : ""}`}
+              onClick={() => { onNav(DASHBOARD_ITEM.id); onClose(); }}
+              title={collapsed ? DASHBOARD_ITEM.label : undefined}
+            >
+              <span className="db-nav-icon" style={{ fontSize: collapsed ? "1.2rem" : "1rem" }}>
+                {DASHBOARD_ITEM.icon}
+              </span>
+              {!collapsed && <span className="db-nav-label">{DASHBOARD_ITEM.label}</span>}
+            </button>
+          </div>
+
+          {/* ── Grouped dropdown items ── */}
+          {NAV_GROUPS.map(group => {
+            const isOpen = !collapsed && expanded === group.label;
+            const hasActive = group.items.some(i => i.id === active);
+            return (
+              <div key={group.label} className="db-nav-group">
+                <button
+                  className={`db-nav-group-header ${hasActive ? "db-nav-group-header--active" : ""}`}
+                  onClick={() => toggle(group.label)}
+                  title={collapsed ? group.label : undefined}
+                >
+                  <span style={{ display:"flex", alignItems:"center", gap: collapsed ? 0 : 10 }}>
+                    <span className="db-nav-group-icon" style={{ fontSize: collapsed ? "1.2rem" : "1rem" }}>
+                      {group.icon}
+                    </span>
+                    {!collapsed && <span>{group.label}</span>}
+                  </span>
+                  {!collapsed && (
+                    <span className={`db-nav-chevron ${isOpen ? "db-nav-chevron--open" : ""}`}>▾</span>
+                  )}
+                </button>
+                {isOpen && (
+                  <div className="db-nav-group-items">
+                    {group.items.map(item => (
+                      <button
+                        key={item.id}
+                        className={`db-nav-item db-nav-item--sub ${active === item.id ? "db-nav-item--active" : ""}`}
+                        onClick={() => { onNav(item.id); onClose(); }}
+                      >
+                        <span className="db-nav-icon">{item.icon}</span>
+                        <span className="db-nav-label">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </button>
-              {!collapsed && expanded === group.label && (
-                <div className="db-nav-group-items">
-                  {group.items.map(item => (
-                    <button
-                      key={item.id}
-                      className={`db-nav-item db-nav-item--sub ${active === item.id ? "db-nav-item--active" : ""}`}
-                      onClick={() => { onNav(item.id); onClose(); }}
-                    >
-                      <span className="db-nav-icon">{item.icon}</span>
-                      <span className="db-nav-label">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="db-sidebar-footer">
           <Link to="/" className="db-nav-item" title={collapsed ? "Back to Site" : undefined}>
-            <span className="db-nav-icon">←</span>
+            <span className="db-nav-icon" style={{ fontSize: collapsed ? "1.2rem" : "1rem" }}>←</span>
             {!collapsed && <span className="db-nav-label">Back to Site</span>}
           </Link>
         </div>
@@ -206,10 +235,11 @@ function Sidebar({ active, onNav, open, onClose }) {
 }
 
 export default function DashboardPage() {
-  const [active, setActive] = useState("overview");
+  const [active, setActive] = useState(DASHBOARD_ITEM.id);
   const [open, setOpen]     = useState(false);
+  const { themeId, setThemeId, themes } = useDashboardTheme();
   const go = useCallback((id) => { setActive(id); setOpen(false); }, []);
-  const allItems = NAV_GROUPS.flatMap(g => g.items);
+  const allItems = [DASHBOARD_ITEM, ...NAV_GROUPS.flatMap(g => g.items)];
   const current  = allItems.find(n => n.id === active);
 
   return (
@@ -220,6 +250,7 @@ export default function DashboardPage() {
           <button className="db-menu-btn" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
           <div className="db-topbar-title">{current?.icon} {current?.label}</div>
           <div className="db-topbar-right">
+            <DashboardThemeSwitcher themeId={themeId} setThemeId={setThemeId} themes={themes} />
             <NotifBell onNav={go} />
             <div className="db-avatar db-avatar-sm">{userData.avatar}</div>
           </div>

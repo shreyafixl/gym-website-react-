@@ -448,7 +448,7 @@ address {
 .hero-stat span {
   font-size: 0.82rem;
   color: rgba(255,255,255,0.7);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -575,7 +575,7 @@ address {
   font-size: 0.75rem;
   font-weight: 700;
   color: #ffffff;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -587,7 +587,7 @@ address {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--accent);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 1px;
   display: block;
   margin-bottom: 8px;
@@ -720,7 +720,7 @@ address {
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--accent);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 1px;
   display: block;
   margin-bottom: 8px;
@@ -909,7 +909,7 @@ address {
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--accent);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.8px;
   margin-bottom: 14px;
 }
@@ -1093,7 +1093,7 @@ address {
   color: var(--accent);
   font-weight: 700;
   font-size: 0.85rem;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -1297,7 +1297,7 @@ address {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-primary);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 1px;
   margin-bottom: 18px;
 }
@@ -1343,7 +1343,7 @@ address {
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-primary);
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.8px;
   margin-bottom: 8px;
 }
@@ -1437,7 +1437,7 @@ address {
   font-size: 0.78rem;
   color: var(--accent);
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -1619,7 +1619,7 @@ address {
   font-weight: 700;
   color: var(--accent);
   margin-bottom: 10px;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 
@@ -2930,7 +2930,7 @@ address {
   font-size: 0.78rem;
   color: var(--text-secondary);
   font-weight: 600;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
 }

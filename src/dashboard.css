@@ -198,7 +198,7 @@
   border-radius: 50px;
   font-size: 0.72rem;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 0.5px;
 }
 .badge-green  { background: rgba(34,197,94,0.15);  color: #22c55e; }
@@ -238,7 +238,7 @@
   text-align: left; padding: 10px 14px;
   background: var(--bg-primary);
   color: var(--accent); font-size: 0.75rem;
-  text-transform: uppercase; letter-spacing: 0.5px;
+  text-transform: capitalize; letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border-color);
 }
 .db-table td {
@@ -457,7 +457,7 @@
   border-radius: 50%; object-fit: cover; flex-shrink: 0;
 }
 .db-trainer-snapshot > div:nth-child(2) { flex: 1; }
-.db-trainer-snapshot span { font-size: 0.72rem; color: var(--accent); font-weight: 700; text-transform: uppercase; }
+.db-trainer-snapshot span { font-size: 0.72rem; color: var(--accent); font-weight: 700; text-transform: capitalize; }
 .db-trainer-snapshot h3  { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 4px 0; }
 .db-trainer-snapshot p   { font-size: 0.82rem; color: var(--text-secondary); }
 .db-trainer-actions { display: flex; gap: 10px; flex-shrink: 0; }
@@ -522,7 +522,7 @@
 .db-booking-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .db-status {
   padding: 3px 10px; border-radius: 50px;
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  font-size: 0.72rem; font-weight: 700; text-transform: capitalize;
 }
 .db-status--confirmed { background: rgba(34,197,94,0.15);  color: #22c55e; }
 .db-status--pending   { background: rgba(234,179,8,0.15);  color: #ca8a04; }
@@ -641,7 +641,7 @@
 .db-trainer-spec {
   display: block; font-size: 0.82rem;
   color: var(--accent); font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.5px;
+  text-transform: capitalize; letter-spacing: 0.5px;
   margin-bottom: 12px;
 }
 .db-trainer-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -765,7 +765,7 @@
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
 }
 .db-details-grid > div { display: flex; flex-direction: column; gap: 3px; }
-.db-details-grid span  { font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.db-details-grid span  { font-size: 0.72rem; color: var(--text-secondary); text-transform: capitalize; letter-spacing: 0.5px; }
 .db-details-grid strong{ font-size: 0.9rem; color: var(--text-primary); font-weight: 600; }
 
 /* -- Responsive -- */
@@ -816,14 +816,52 @@
   width: 100%; padding: 10px 24px;
   background: none; border: none; cursor: pointer;
   color: var(--text-secondary); font-size: 0.8rem; font-weight: 700;
-  text-align: left; text-transform: uppercase; letter-spacing: 0.5px;
+  text-align: left; text-transform: capitalize; letter-spacing: 0.5px;
   transition: color 0.2s;
 }
 .db-nav-group-header:hover { color: var(--accent); }
+.db-nav-group-header--active { color: var(--accent); }
 .db-nav-chevron { font-size: 0.7rem; transition: transform 0.2s; }
 .db-nav-chevron--open { transform: rotate(180deg); }
 .db-nav-group-items { display: flex; flex-direction: column; }
 .db-nav-item--sub { padding-left: 36px !important; font-size: 0.88rem !important; }
+
+/* ─── Direct Nav Item (Dashboard) ─────────────────────────────────────────── */
+.db-nav-direct {
+  margin-bottom: 8px;
+  padding: 0 12px;
+}
+.db-nav-direct-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.2s;
+}
+.db-nav-direct-item:hover {
+  background: rgba(249,115,22,0.08);
+  color: var(--accent);
+}
+.db-nav-direct-item.db-nav-item--active {
+  background: rgba(249,115,22,0.12);
+  color: var(--accent);
+}
+.db-sidebar--collapsed .db-nav-direct {
+  padding: 0 10px;
+}
+.db-sidebar--collapsed .db-nav-direct-item {
+  justify-content: center;
+  padding: 10px;
+}
 
 /* ─── Notification Dropdown ───────────────────────────────────────────────── */
 .db-notif-dropdown {

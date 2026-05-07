@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { dietPlan, mealLog, waterData } from "../data/dashboardData";
 
 function ProgressBar({ value, max=100, color="var(--accent)", height=8 }) {
@@ -11,6 +11,11 @@ function ProgressBar({ value, max=100, color="var(--accent)", height=8 }) {
 
 export default function DashboardNutrition({ tab: initialTab = "diet" }) {
   const [tab, setTab] = useState(initialTab);
+
+  // Sync tab state when prop changes
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
   const [cups, setCups] = useState(Math.round(waterData.today / 0.25));
   const totalCups = Math.round(waterData.target / 0.25);
   const totalLogged = mealLog.filter(m => m.logged).reduce((s,m) => s+m.calories, 0);

@@ -46,7 +46,7 @@
 .sa-form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
 .sa-form-group label{font-size:.82rem;font-weight:600;color:var(--text-primary)}
 .sa-table{width:100%;border-collapse:collapse;font-size:.84rem}
-.sa-table th{text-align:left;padding:9px 12px;background:var(--bg-primary);color:#ef4444;font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border-color)}
+.sa-table th{text-align:left;padding:9px 12px;background:var(--bg-primary);color:#ef4444;font-size:.7rem;text-transform:capitalize;letter-spacing:.5px;border-bottom:1px solid var(--border-color)}
 .sa-table td{padding:11px 12px;border-bottom:1px solid var(--border-color);color:var(--text-primary)}
 .sa-table tr:last-child td{border-bottom:none}
 .sa-table tr:hover td{background:var(--bg-primary)}
@@ -98,7 +98,7 @@
 /* ─── SIDEBAR GROUPS (DROPDOWN NAV) ─────────────────────────────────────── */
 .sa-nav-group{border-bottom:1px solid var(--border-color)}
 .sa-nav-group:last-child{border-bottom:none}
-.sa-nav-group-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 20px;background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;transition:color .2s}
+.sa-nav-group-header{display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 20px;background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:.7rem;font-weight:700;text-transform:capitalize;letter-spacing:.8px;transition:color .2s}
 .sa-nav-group-header:hover{color:var(--text-primary)}
 .sa-nav-group-items{padding:2px 0 6px}
 .sa-nav-group-items .sa-nav-item{padding-left:32px;font-size:.82rem}
@@ -307,7 +307,7 @@
 .sa-nav-group-header:hover{color:var(--text-primary);background:rgba(255,255,255,.03)}
 .sa-nav-group-header-open{color:var(--text-primary)!important}
 .sa-nav-group-icon{font-size:.85rem;width:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.7}
-.sa-nav-group-label{flex:1;text-transform:uppercase;letter-spacing:.6px;font-size:.68rem}
+.sa-nav-group-label{flex:1;text-transform:capitalize;letter-spacing:.6px;font-size:.68rem}
 .sa-nav-chevron{font-size:.7rem;transition:transform .25s ease;display:flex;align-items:center;opacity:.6}
 .sa-nav-chevron-open{transform:rotate(180deg);opacity:1}
 
