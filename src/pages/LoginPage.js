@@ -10,7 +10,7 @@ const DEMO_HINTS = [
 ];
 
 function LoginPage() {
-  const { login, isLoggedIn, user } = useAuth();
+  const { login, isLoggedIn, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm]     = useState({ email: '', password: '' });
@@ -27,23 +27,22 @@ function LoginPage() {
     if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.email.trim() || !form.password) {
       setError('Please enter both email and password.');
       return;
     }
     setLoading(true);
-    // Simulate slight async feel
-    setTimeout(() => {
-      const result = login(form.email, form.password);
-      if (result.success) {
-        navigate(ROLE_ROUTES[result.user.role] || '/', { replace: true });
-      } else {
-        setError(result.error);
-        setLoading(false);
-      }
-    }, 400);
+    
+    const result = await login(form.email, form.password);
+    
+    if (result.success) {
+      navigate(ROLE_ROUTES[result.user.role] || '/', { replace: true });
+    } else {
+      setError(result.error);
+      setLoading(false);
+    }
   };
 
   const fillDemo = (email, password) => {
@@ -114,9 +113,9 @@ function LoginPage() {
           <button
             type="submit"
             className="btn btn-primary btn-full login-submit"
-            disabled={loading}
+            disabled={loading || authLoading}
           >
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading || authLoading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 

@@ -7,7 +7,7 @@ const INITIAL_LOGIN  = { email: '', password: '' };
 const INITIAL_SIGNUP = { name: '', email: '', password: '', confirmPassword: '' };
 
 function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const navigate  = useNavigate();
 
   const [mode,       setMode]       = useState(defaultMode);
@@ -16,6 +16,8 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
   const [errors,     setErrors]     = useState({});
   const [submitted,  setSubmitted]  = useState(false);
   const [loginErr,   setLoginErr]   = useState('');
+  const [signupErr,  setSignupErr]  = useState('');
+  const [loading,    setLoading]    = useState(false);
 
   const handleClose = useCallback(() => {
     setLoginData(INITIAL_LOGIN);
@@ -23,11 +25,20 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
     setErrors({});
     setSubmitted(false);
     setLoginErr('');
+    setSignupErr('');
+    setLoading(false);
     setMode(defaultMode);
     onClose();
   }, [onClose, defaultMode]);
 
-  const switchMode = (m) => { setMode(m); setErrors({}); setSubmitted(false); setLoginErr(''); };
+  const switchMode = (m) => { 
+    setMode(m); 
+    setErrors({}); 
+    setSubmitted(false); 
+    setLoginErr(''); 
+    setSignupErr('');
+    setLoading(false);
+  };
 
   // ── Validation ───────────────────────────────────────────────
   const validateLogin = () => {
@@ -51,14 +62,17 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
   };
 
   // ── Submit ───────────────────────────────────────────────────
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     const errs = validateLogin();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setLoginErr('');
+    setLoading(true);
 
-    const result = login(loginData.email, loginData.password);
+    const result = await login(loginData.email, loginData.password);
+    setLoading(false);
+    
     if (result.success) {
       handleClose();
       navigate(ROLE_ROUTES[result.user.role] || '/');
@@ -67,12 +81,31 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
     }
   };
 
-  const handleSignupSubmit = (e) => {
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     const errs = validateSignup();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    setSubmitted(true);
+    setSignupErr('');
+    setLoading(true);
+
+    const result = await signup(
+      signupData.name,
+      signupData.email,
+      signupData.password
+    );
+    setLoading(false);
+
+    if (result.success) {
+      setSubmitted(true);
+      // Auto-close after 2 seconds and redirect
+      setTimeout(() => {
+        handleClose();
+        navigate(ROLE_ROUTES[result.user.role] || '/');
+      }, 2000);
+    } else {
+      setSignupErr(result.error);
+    }
   };
 
   // ── Field helpers ────────────────────────────────────────────
@@ -87,6 +120,7 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
     const { name, value } = e.target;
     setSignupData(p => ({ ...p, [name]: value }));
     if (errors[name]) setErrors(p => ({ ...p, [name]: '' }));
+    if (signupErr) setSignupErr('');
   };
 
   return (
@@ -161,7 +195,9 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
               {errors.password && <span className="auth-error">{errors.password}</span>}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full auth-submit">Login</button>
+            <button type="submit" className="btn btn-primary btn-full auth-submit" disabled={loading}>
+              {loading ? 'Signing in...' : 'Login'}
+            </button>
             <p className="auth-switch-text">
               Don't have an account?{' '}
               <button type="button" className="auth-switch-link" onClick={() => switchMode('signup')}>Sign Up</button>
@@ -171,6 +207,8 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
         ) : (
           /* ── Sign Up ── */
           <form className="auth-form" onSubmit={handleSignupSubmit} noValidate>
+            {signupErr && <div className="login-error" role="alert">{signupErr}</div>}
+            
             <div className="auth-field">
               <label htmlFor="m-signup-name" className="auth-label">Full Name</label>
               <input id="m-signup-name" type="text" name="name"
@@ -207,7 +245,9 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
               {errors.confirmPassword && <span className="auth-error">{errors.confirmPassword}</span>}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full auth-submit">Create Account</button>
+            <button type="submit" className="btn btn-primary btn-full auth-submit" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </button>
             <p className="auth-switch-text">
               Already have an account?{' '}
               <button type="button" className="auth-switch-link" onClick={() => switchMode('login')}>Login</button>

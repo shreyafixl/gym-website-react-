@@ -53,23 +53,70 @@ app.get('/api', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/health',
-      auth: '/api/superadmin/auth',
+      memberAuth: '/api/auth',
+      superAdminAuth: '/api/superadmin/auth',
       users: '/api/superadmin/users',
       branches: '/api/superadmin/branches',
       financial: '/api/superadmin/financial',
       analytics: '/api/superadmin/analytics',
+      communication: '/api/superadmin/communication',
+      attendance: '/api/attendance',
+      memberships: '/api/memberships',
+      membershipPlans: '/api/membership-plans',
+      workouts: '/api/workouts',
+      diets: '/api/diets',
+      schedules: '/api/schedules',
+      trainers: '/api/trainers',
+      support: '/api/support',
+      settings: '/api/settings',
+      integrations: '/api/integrations',
+      data: '/api/data',
     },
   });
 });
 
 // Mount API Routes
-app.use('/api/superadmin/auth', require('./routes/authRoutes'));
 
-// Additional routes (will be added in next steps)
-// app.use('/api/superadmin/users', require('./routes/userRoutes'));
-// app.use('/api/superadmin/branches', require('./routes/branchRoutes'));
-// app.use('/api/superadmin/financial', require('./routes/financialRoutes'));
-// app.use('/api/superadmin/analytics', require('./routes/analyticsRoutes'));
+// Member/User Authentication (for frontend)
+app.use('/api/auth', require('./routes/memberAuthRoutes'));
+
+// Super Admin Routes
+app.use('/api/superadmin/auth', require('./routes/authRoutes'));
+app.use('/api/superadmin/users', require('./routes/userRoutes'));
+app.use('/api/superadmin/branches', require('./routes/branchRoutes'));
+app.use('/api/superadmin/financial', require('./routes/financialRoutes'));
+app.use('/api/superadmin/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/superadmin/communication', require('./routes/communicationRoutes'));
+
+// Attendance Routes
+app.use('/api/attendance', require('./routes/attendanceRoutes'));
+
+// Membership Routes
+app.use('/api', require('./routes/membershipRoutes'));
+
+// Workout Routes
+app.use('/api/workouts', require('./routes/workoutRoutes'));
+
+// Diet Routes
+app.use('/api/diets', require('./routes/dietRoutes'));
+
+// Schedule Routes
+app.use('/api/schedules', require('./routes/scheduleRoutes'));
+
+// Trainer Routes
+app.use('/api/trainers', require('./routes/trainerRoutes'));
+
+// Support Routes
+app.use('/api/support', require('./routes/supportRoutes'));
+
+// Settings Routes
+app.use('/api/settings', require('./routes/settingsRoutes'));
+
+// Integration Routes
+app.use('/api/integrations', require('./routes/integrationRoutes'));
+
+// Data Management Routes
+app.use('/api/data', require('./routes/dataManagementRoutes'));
 
 // 404 Handler
 app.use(notFound);
