@@ -4,24 +4,31 @@ const {
   signup,
   login,
   getMe,
+  updateProfile,
+  changePassword,
   logout,
+  refreshToken,
 } = require('../controllers/memberAuthController');
 const { protect } = require('../middleware/authMiddleware');
+const { authorize } = require('../middleware/roleMiddleware');
 
 /**
- * Member/User Authentication Routes
+ * Member Authentication Routes
  * Base path: /api/auth
- * These routes are for regular gym members/users
  */
 
 // Public routes
 router.post('/signup', signup);
 router.post('/login', login);
+router.post('/refresh', refreshToken);
 
 // Protected routes (require authentication)
-router.use(protect); // All routes below this require authentication
+router.use(protect);
 
-router.get('/me', getMe);
-router.post('/logout', logout);
+// Member only routes
+router.get('/me', authorize('member'), getMe);
+router.put('/profile', authorize('member'), updateProfile);
+router.put('/password', authorize('member'), changePassword);
+router.post('/logout', authorize('member'), logout);
 
 module.exports = router;

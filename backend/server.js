@@ -54,6 +54,27 @@ app.get('/api', (req, res) => {
     endpoints: {
       health: '/health',
       memberAuth: '/api/auth',
+      adminAuth: '/api/admin/auth',
+      adminUsers: '/api/admin/users',
+      adminBranches: '/api/admin/branches',
+      adminAnalytics: '/api/admin/analytics',
+      adminAttendance: '/api/admin/attendance',
+      adminMemberships: '/api/admin/memberships',
+      adminMembershipPlans: '/api/admin/membership-plans',
+      adminWorkouts: '/api/admin/workouts',
+      adminSchedules: '/api/admin/schedules',
+      adminTrainers: '/api/admin/trainers',
+      adminSupport: '/api/admin/support',
+      adminCommunication: '/api/admin/communication',
+      trainerAuth: '/api/trainer/auth',
+      trainerMembers: '/api/trainer/members',
+      trainerWorkouts: '/api/trainer/workouts',
+      trainerDiets: '/api/trainer/diets',
+      trainerAttendance: '/api/trainer/attendance',
+      trainerProgress: '/api/trainer/progress',
+      trainerSchedule: '/api/trainer/schedule',
+      trainerNotifications: '/api/trainer/notifications',
+      trainerDashboard: '/api/trainer/dashboard',
       superAdminAuth: '/api/superadmin/auth',
       users: '/api/superadmin/users',
       branches: '/api/superadmin/branches',
@@ -79,6 +100,66 @@ app.get('/api', (req, res) => {
 
 // Member/User Authentication (for frontend)
 app.use('/api/auth', require('./routes/memberAuthRoutes'));
+
+// Admin Authentication (for admin panel)
+app.use('/api/admin/auth', require('./routes/adminAuthRoutes'));
+
+// Admin User Management (for admin panel)
+app.use('/api/admin/users', require('./routes/adminUserRoutes'));
+
+// Admin Branch Management (for admin panel)
+app.use('/api/admin/branches', require('./routes/adminBranchRoutes'));
+
+// Admin Analytics (for admin panel)
+app.use('/api/admin/analytics', require('./routes/adminAnalyticsRoutes'));
+
+// Admin Attendance Management (for admin panel)
+app.use('/api/admin/attendance', require('./routes/adminAttendanceRoutes'));
+
+// Admin Membership Management (for admin panel)
+app.use('/api/admin', require('./routes/adminMembershipRoutes'));
+
+// Admin Workout Management (for admin panel)
+app.use('/api/admin/workouts', require('./routes/adminWorkoutRoutes'));
+
+// Admin Schedule Management (for admin panel)
+app.use('/api/admin/schedules', require('./routes/adminScheduleRoutes'));
+
+// Admin Trainer Management (for admin panel)
+app.use('/api/admin/trainers', require('./routes/adminTrainerRoutes'));
+
+// Admin Support Ticket Management (for admin panel)
+app.use('/api/admin/support', require('./routes/adminSupportRoutes'));
+
+// Admin Communication System (for admin panel)
+app.use('/api/admin/communication', require('./routes/adminCommunicationRoutes'));
+
+// Trainer Authentication (for trainer dashboard)
+app.use('/api/trainer/auth', require('./routes/trainerAuthRoutes'));
+
+// Trainer Members Management (for trainer dashboard)
+app.use('/api/trainer/members', require('./routes/trainerMemberRoutes'));
+
+// Trainer Workout Management (for trainer dashboard)
+app.use('/api/trainer/workouts', require('./routes/trainerWorkoutRoutes'));
+
+// Trainer Diet & Nutrition Management (for trainer dashboard)
+app.use('/api/trainer/diets', require('./routes/trainerDietRoutes'));
+
+// Trainer Attendance Management (for trainer dashboard)
+app.use('/api/trainer/attendance', require('./routes/trainerAttendanceRoutes'));
+
+// Trainer Progress Tracking (for trainer dashboard)
+app.use('/api/trainer/progress', require('./routes/trainerProgressRoutes'));
+
+// Trainer Schedule & Session Management (for trainer dashboard)
+app.use('/api/trainer/schedule', require('./routes/trainerScheduleRoutes'));
+
+// Trainer Notifications (for trainer dashboard)
+app.use('/api/trainer/notifications', require('./routes/trainerNotificationRoutes'));
+
+// Trainer Dashboard Analytics (for trainer dashboard)
+app.use('/api/trainer/dashboard', require('./routes/trainerDashboardRoutes'));
 
 // Super Admin Routes
 app.use('/api/superadmin/auth', require('./routes/authRoutes'));

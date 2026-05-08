@@ -2754,6 +2754,39 @@ address {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.auth-form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-form::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-form::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.auth-form::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Two-column layout for signup form */
+.auth-form.signup-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.auth-form.signup-form .auth-field:nth-child(5),
+.auth-form.signup-form .auth-field:nth-child(6),
+.auth-form.signup-form .auth-field:nth-child(7) {
+  grid-column: 1 / -1;
 }
 
 .auth-field {
@@ -2801,12 +2834,14 @@ address {
 
 .auth-submit {
   margin-top: 4px;
+  grid-column: 1 / -1;
 }
 
 .auth-switch-text {
   text-align: center;
   font-size: 0.85rem;
   color: var(--text-secondary);
+  grid-column: 1 / -1;
 }
 
 .auth-switch-link {
@@ -2860,14 +2895,75 @@ address {
   margin-bottom: 8px;
 }
 
-/* Narrow the auth modal — it doesn't need 700px */
+/* Wider modal for signup form */
 .modal-content:has(.auth-modal) {
   max-width: 440px;
+}
+
+.modal-content:has(.signup-form) {
+  max-width: 700px;
+}
+
+/* Demo login buttons */
+.login-demo-hints {
+  margin-bottom: 0.5rem;
+}
+
+.login-demo-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.login-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.login-demo-btn {
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.login-demo-btn:hover {
+  border-color: var(--accent);
+  background-color: rgba(232, 98, 42, 0.1);
+  color: var(--accent);
 }
 
 @media (max-width: 768px) {
   .mobile-auth-btns {
     display: flex;
+  }
+
+  .auth-form.signup-form {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-form.signup-form .auth-field:nth-child(5),
+  .auth-form.signup-form .auth-field:nth-child(6),
+  .auth-form.signup-form .auth-field:nth-child(7) {
+    grid-column: 1;
+  }
+
+  .modal-content:has(.signup-form) {
+    max-width: 90vw;
+  }
+
+  .login-demo-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

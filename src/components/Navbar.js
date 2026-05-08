@@ -64,8 +64,8 @@ function Navbar() {
         {isLoggedIn ? (
           <>
             <Link to={ROLE_ROUTES[user.role] || '/dashboard'} className="navbar-user-btn">
-              <span className="navbar-avatar">{user.avatar}</span>
-              <span className="navbar-username">{user.name.split(' ')[0]}</span>
+              <span className="navbar-avatar">{user.avatar || (user.fullName ? user.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U')}</span>
+              <span className="navbar-username">{user.fullName ? user.fullName.split(' ')[0] : 'User'}</span>
             </Link>
             <button className="navbar-auth-btn navbar-login" onClick={handleLogout}>
               Logout

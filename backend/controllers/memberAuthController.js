@@ -5,136 +5,149 @@ const asyncHandler = require('../utils/asyncHandler');
 const { generateAccessToken, generateRefreshToken } = require('../utils/generateToken');
 
 /**
- * @desc    Register new member/user
+ * @desc    Member signup
  * @route   POST /api/auth/signup
  * @access  Public
  */
 const signup = asyncHandler(async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { fullName, email, password, phone, gender, age } = req.body;
 
   // Validate required fields
-  if (!name || !email || !password) {
-    throw ApiError.badRequest('Please provide name, email, and password');
+  if (!fullName || !fullName.trim()) {
+    throw ApiError.badRequest('Full name is required');
   }
 
-  // Validate email format
-  const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-  if (!emailRegex.test(email)) {
-    throw ApiError.badRequest('Please provide a valid email address');
+  if (!email || !email.trim()) {
+    throw ApiError.badRequest('Email is required');
+  }
+
+  if (!password) {
+    throw ApiError.badRequest('Password is required');
+  }
+
+  if (!phone || !phone.trim()) {
+    throw ApiError.badRequest('Phone number is required');
+  }
+
+  if (!gender) {
+    throw ApiError.badRequest('Gender is required');
+  }
+
+  if (!age) {
+    throw ApiError.badRequest('Age is required');
   }
 
   // Validate password length
-  if (password.length < 6) {
-    throw ApiError.badRequest('Password must be at least 6 characters');
+  if (password.length < 8) {
+    throw ApiError.badRequest('Password must be at least 8 characters');
   }
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  // Validate phone format (10 digits)
+  const phoneRegex = /^[0-9]{10}$/;
+  if (!phoneRegex.test(phone.trim())) {
+    throw ApiError.badRequest('Phone number must be exactly 10 digits');
+  }
+
+  // Validate age
+  const ageNum = parseInt(age);
+  if (isNaN(ageNum) || ageNum < 13 || ageNum > 120) {
+    throw ApiError.badRequest('Age must be between 13 and 120');
+  }
+
+  // Validate gender
+  const validGenders = ['male', 'female', 'other'];
+  if (!validGenders.includes(gender.toLowerCase())) {
+    throw ApiError.badRequest('Gender must be male, female, or other');
+  }
+
+  // Check if email already exists
+  const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+
   if (existingUser) {
-    throw ApiError.conflict('User with this email already exists');
+    throw ApiError.conflict('Email already registered');
   }
 
-  // Create user with member role
-  const user = await User.create({
-    fullName: name,
-    email: email.toLowerCase(),
-    password, // Will be hashed by pre-save hook
-    phone: phone || '0000000000', // Default phone if not provided
-    gender: 'other', // Default gender
-    age: 18, // Default age
+  // Create new user
+  const user = new User({
+    fullName: fullName.trim(),
+    email: email.toLowerCase().trim(),
+    password,
+    phone: phone.trim(),
+    gender: gender.toLowerCase(),
+    age: ageNum,
     role: 'member',
-    membershipPlan: 'none',
     membershipStatus: 'pending',
-    isActive: true,
   });
+
+  // Save user (password will be hashed by pre-save middleware)
+  await user.save();
 
   // Generate tokens
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Update last login
-  user.lastLogin = new Date();
-  await user.save();
-
-  // Get public profile
   const profile = user.getPublicProfile();
 
-  ApiResponse.created(
+  ApiResponse.success(
     res,
     {
-      user: {
-        id: profile.id,
-        name: profile.fullName,
-        email: profile.email,
-        role: 'user', // Frontend expects 'user' role
-        avatar: profile.fullName.substring(0, 2).toUpperCase(),
-      },
+      user: profile,
       token: accessToken,
       refreshToken: refreshToken,
+      expiresIn: 3600,
     },
-    'Account created successfully'
+    'Account created successfully',
+    201
   );
 });
 
 /**
- * @desc    Login member/user
+ * @desc    Member login
  * @route   POST /api/auth/login
  * @access  Public
  */
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Validate input
   if (!email || !password) {
     throw ApiError.badRequest('Please provide email and password');
   }
 
-  // Find user by email (including password field)
-  const user = await User.findByEmail(email.toLowerCase());
+  const user = await User.findOne({ email }).select('+password');
 
-  // Check if user exists
   if (!user) {
     throw ApiError.unauthorized('Invalid email or password');
   }
 
-  // Check if user is active
+  if (user.role !== 'member') {
+    throw ApiError.forbidden('This login is for members only');
+  }
+
   if (!user.isActive) {
     throw ApiError.forbidden('Account is deactivated. Please contact support.');
   }
 
-  // Verify password
   const isPasswordMatch = await user.comparePassword(password);
 
   if (!isPasswordMatch) {
     throw ApiError.unauthorized('Invalid email or password');
   }
 
-  // Update last login info
   user.lastLogin = new Date();
   await user.save();
 
-  // Generate tokens
   const accessToken = generateAccessToken(user._id, user.role);
   const refreshToken = generateRefreshToken(user._id);
 
-  // Map role to frontend expected format
-  let frontendRole = 'user';
-  if (user.role === 'trainer') frontendRole = 'trainer';
-  if (user.role === 'staff') frontendRole = 'admin';
+  const profile = user.getPublicProfile();
 
-  // Send response
   ApiResponse.success(
     res,
     {
-      user: {
-        id: user._id,
-        name: user.fullName,
-        email: user.email,
-        role: frontendRole,
-        avatar: user.fullName.substring(0, 2).toUpperCase(),
-      },
+      user: profile,
       token: accessToken,
       refreshToken: refreshToken,
+      expiresIn: 3600,
     },
     'Login successful',
     200
@@ -142,49 +155,102 @@ const login = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get current logged in user
- * @route   GET /api/auth/me
- * @access  Private
+ * @desc    Get current member profile
+ * @route   GET /api/member/auth/me
+ * @access  Private (Member only)
  */
 const getMe = asyncHandler(async (req, res) => {
-  // req.user is set by protect middleware
+  const user = await User.findById(req.user.id).populate('assignedTrainer', 'fullName email phone');
+
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  ApiResponse.success(
+    res,
+    { user: user.getPublicProfile() },
+    'Profile retrieved successfully'
+  );
+});
+
+/**
+ * @desc    Update member profile
+ * @route   PUT /api/member/auth/profile
+ * @access  Private (Member only)
+ */
+const updateProfile = asyncHandler(async (req, res) => {
+  const { fullName, phone, gender, age, height, weight, fitnessGoal, address, emergencyContact } = req.body;
+
   const user = await User.findById(req.user.id);
 
   if (!user) {
     throw ApiError.notFound('User not found');
   }
 
-  // Map role to frontend expected format
-  let frontendRole = 'user';
-  if (user.role === 'trainer') frontendRole = 'trainer';
-  if (user.role === 'staff') frontendRole = 'admin';
+  if (fullName) user.fullName = fullName;
+  if (phone) user.phone = phone;
+  if (gender) user.gender = gender;
+  if (age) user.age = age;
+  if (height !== undefined) user.height = height;
+  if (weight !== undefined) user.weight = weight;
+  if (fitnessGoal) user.fitnessGoal = fitnessGoal;
+  if (address !== undefined) user.address = address;
+  if (emergencyContact) {
+    user.emergencyContact = {
+      ...user.emergencyContact,
+      ...emergencyContact,
+    };
+  }
+
+  await user.save();
 
   ApiResponse.success(
     res,
-    {
-      user: {
-        id: user._id,
-        name: user.fullName,
-        email: user.email,
-        role: frontendRole,
-        avatar: user.fullName.substring(0, 2).toUpperCase(),
-      },
-    },
-    'User profile retrieved successfully'
+    { user: user.getPublicProfile() },
+    'Profile updated successfully'
   );
 });
 
 /**
- * @desc    Logout user
- * @route   POST /api/auth/logout
- * @access  Private
+ * @desc    Change member password
+ * @route   PUT /api/member/auth/password
+ * @access  Private (Member only)
+ */
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    throw ApiError.badRequest('Please provide current and new password');
+  }
+
+  if (newPassword.length < 8) {
+    throw ApiError.badRequest('New password must be at least 8 characters');
+  }
+
+  const user = await User.findById(req.user.id).select('+password');
+
+  const isMatch = await user.comparePassword(currentPassword);
+
+  if (!isMatch) {
+    throw ApiError.unauthorized('Current password is incorrect');
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  ApiResponse.success(
+    res,
+    null,
+    'Password changed successfully'
+  );
+});
+
+/**
+ * @desc    Member logout
+ * @route   POST /api/member/auth/logout
+ * @access  Private (Member only)
  */
 const logout = asyncHandler(async (req, res) => {
-  // In a production app, you would:
-  // 1. Invalidate the token in a blacklist/redis
-  // 2. Clear any session data
-  // 3. Remove refresh token from database
-
   ApiResponse.success(
     res,
     null,
@@ -192,9 +258,53 @@ const logout = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * @desc    Refresh access token
+ * @route   POST /api/member/auth/refresh
+ * @access  Public
+ */
+const refreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    throw ApiError.badRequest('Refresh token is required');
+  }
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+
+    const user = await User.findById(decoded.id);
+
+    if (!user || !user.isActive) {
+      throw ApiError.unauthorized('Invalid refresh token');
+    }
+
+    if (user.role !== 'member') {
+      throw ApiError.forbidden('This token is not valid for member access');
+    }
+
+    const newAccessToken = generateAccessToken(user._id, user.role);
+
+    ApiResponse.success(
+      res,
+      {
+        token: newAccessToken,
+        expiresIn: 3600,
+      },
+      'Token refreshed successfully'
+    );
+  } catch (error) {
+    throw ApiError.unauthorized('Invalid or expired refresh token');
+  }
+});
+
 module.exports = {
   signup,
   login,
   getMe,
+  updateProfile,
+  changePassword,
   logout,
+  refreshToken,
 };

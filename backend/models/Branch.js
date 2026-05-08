@@ -38,8 +38,8 @@ const branchSchema = new mongoose.Schema(
     },
     pincode: {
       type: String,
-      required: [true, 'Pincode is required'],
-      match: [/^[0-9]{6}$/, 'Please provide a valid 6-digit pincode'],
+      required: [true, 'Pincode/Zipcode is required'],
+      match: [/^[0-9]{5,6}$/, 'Please provide a valid 5-6 digit pincode/zipcode'],
     },
     contactNumber: {
       type: String,

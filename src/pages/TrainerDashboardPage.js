@@ -1542,25 +1542,35 @@ function Sidebar({ active, onNav, open, onClose }) {
     const group = NAV_GROUPS.find(g => g.items.some(i => i.id === active));
     return group ? group.label : null;
   });
+  const [collapsed, setCollapsed] = useState(false);
   const toggle = (label) => setExpanded(prev => prev === label ? null : label);
 
   return (
     <>
-      <aside className={`td-sidebar ${open ? "td-sidebar-open" : ""}`}>
-        {/* Brand */}
+      <aside className={`td-sidebar ${open ? "td-sidebar-open" : ""} ${collapsed ? "td-sidebar-collapsed" : ""}`}>
+        {/* Brand + collapse button */}
         <div className="td-sidebar-brand">
-          <span className="td-brand-icon">⚡</span>
-          <span className="td-brand-text">FitZone <em>Trainer</em></span>
+          {!collapsed && <span className="td-brand-text">FitZone <em>Trainer</em></span>}
+          <button
+            className="td-sidebar-collapse-btn"
+            onClick={() => setCollapsed(c => !c)}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? "→" : "←"}
+          </button>
         </div>
 
         {/* User */}
-        <div className="td-sidebar-user">
-          <div className="td-avatar">{trainerInfo.avatar}</div>
-          <div>
-            <strong>{trainerInfo.name}</strong>
-            <span>{trainerInfo.specialization}</span>
+        {!collapsed && (
+          <div className="td-sidebar-user">
+            <div className="td-avatar">{trainerInfo.avatar}</div>
+            <div>
+              <strong>{trainerInfo.name}</strong>
+              <span>{trainerInfo.specialization}</span>
+            </div>
           </div>
-        </div>
+        )}
 
         <nav className="td-nav">
           {/* ── Dashboard: direct link, no dropdown ── */}
@@ -1589,6 +1599,7 @@ function Sidebar({ active, onNav, open, onClose }) {
                   className={`td-nav-group-header ${isOpen ? "td-nav-group-header-open" : ""} ${hasActive ? "td-nav-group-header-has-active" : ""}`}
                   onClick={() => toggle(group.label)}
                   aria-expanded={isOpen}
+                  title={collapsed ? group.label : undefined}
                 >
                   <span
                     className="td-nav-icon-bubble"
@@ -1596,12 +1607,14 @@ function Sidebar({ active, onNav, open, onClose }) {
                   >
                     {group.icon}
                   </span>
-                  <span className="td-nav-group-label">{group.label}</span>
-                  <span className={`td-nav-chevron ${isOpen ? "td-nav-chevron-open" : ""}`}>
-                    <FaAngleDown />
-                  </span>
+                  {!collapsed && <span className="td-nav-group-label">{group.label}</span>}
+                  {!collapsed && (
+                    <span className={`td-nav-chevron ${isOpen ? "td-nav-chevron-open" : ""}`}>
+                      <FaAngleDown />
+                    </span>
+                  )}
                 </button>
-                <div className={`td-nav-group-items ${isOpen ? "td-nav-group-items-open" : ""}`}>
+                <div className={`td-nav-group-items ${isOpen && !collapsed ? "td-nav-group-items-open" : ""}`}>
                   {group.items.map(n => (
                     <button
                       key={n.id}

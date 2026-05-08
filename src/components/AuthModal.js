@@ -4,7 +4,7 @@ import Modal from './Modal';
 import { useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 
 const INITIAL_LOGIN  = { email: '', password: '' };
-const INITIAL_SIGNUP = { name: '', email: '', password: '', confirmPassword: '' };
+const INITIAL_SIGNUP = { fullName: '', email: '', password: '', confirmPassword: '', phone: '', gender: 'other', age: 18 };
 
 function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
   const { login, signup } = useAuth();
@@ -51,13 +51,26 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
 
   const validateSignup = () => {
     const e = {};
-    if (!signupData.name.trim()) e.name = 'Name is required.';
+    if (!signupData.fullName.trim()) e.fullName = 'Full name is required.';
+    else if (signupData.fullName.trim().length < 2) e.fullName = 'Full name must be at least 2 characters.';
+    
     if (!signupData.email.trim()) e.email = 'Email is required.';
     else if (!/\S+@\S+\.\S+/.test(signupData.email)) e.email = 'Enter a valid email.';
+    
     if (!signupData.password) e.password = 'Password is required.';
-    else if (signupData.password.length < 6) e.password = 'Password must be at least 6 characters.';
+    else if (signupData.password.length < 8) e.password = 'Password must be at least 8 characters.';
+    
     if (!signupData.confirmPassword) e.confirmPassword = 'Please confirm your password.';
     else if (signupData.password !== signupData.confirmPassword) e.confirmPassword = 'Passwords do not match.';
+    
+    if (!signupData.phone.trim()) e.phone = 'Phone number is required.';
+    else if (!/^[0-9]{10}$/.test(signupData.phone.trim())) e.phone = 'Phone must be exactly 10 digits.';
+    
+    if (!signupData.gender) e.gender = 'Gender is required.';
+    
+    if (!signupData.age || signupData.age < 13) e.age = 'Age must be at least 13.';
+    else if (signupData.age > 120) e.age = 'Age must be less than 120.';
+    
     return e;
   };
 
@@ -84,27 +97,41 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     const errs = validateSignup();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) { 
+      setErrors(errs); 
+      return; 
+    }
     setErrors({});
     setSignupErr('');
     setLoading(true);
 
-    const result = await signup(
-      signupData.name,
-      signupData.email,
-      signupData.password
-    );
-    setLoading(false);
+    try {
+      const result = await signup(
+        signupData.fullName.trim(),
+        signupData.email.trim(),
+        signupData.password,
+        signupData.phone.trim(),
+        signupData.gender.toLowerCase(),
+        parseInt(signupData.age)
+      );
+      setLoading(false);
 
-    if (result.success) {
-      setSubmitted(true);
-      // Auto-close after 2 seconds and redirect
-      setTimeout(() => {
-        handleClose();
-        navigate(ROLE_ROUTES[result.user.role] || '/');
-      }, 2000);
-    } else {
-      setSignupErr(result.error);
+      if (result.success) {
+        setSubmitted(true);
+        // After 2 seconds, close modal and redirect to home with login modal
+        setTimeout(() => {
+          handleClose();
+          // Redirect to home page
+          navigate('/');
+          // The parent component (Navbar) will handle opening the login modal
+        }, 2000);
+      } else {
+        setSignupErr(result.error || 'Signup failed. Please try again.');
+      }
+    } catch (error) {
+      setLoading(false);
+      const errorMsg = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
+      setSignupErr(errorMsg);
     }
   };
 
@@ -142,8 +169,8 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
           <div className="auth-success">
             <span className="auth-success-icon">✓</span>
             <h3>Account created!</h3>
-            <p>Welcome to FitZone. Start your fitness journey today.</p>
-            <button className="btn btn-primary btn-full" onClick={handleClose}>Continue</button>
+            <p>Your account has been successfully created. Please log in with your email and password to continue.</p>
+            <button className="btn btn-primary btn-full" onClick={() => { setSubmitted(false); switchMode('login'); setLoginData({ email: signupData.email, password: '' }); }}>Go to Login</button>
           </div>
 
         ) : mode === 'login' ? (
@@ -159,7 +186,6 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
                   { role: 'Super Admin', email: 'superadmin@gym.com' },
                   { role: 'Admin',       email: 'admin@gym.com'      },
                   { role: 'Trainer',     email: 'trainer@gym.com'    },
-                  { role: 'Member',      email: 'user@gym.com'       },
                 ].map(h => (
                   <button
                     key={h.role}
@@ -206,16 +232,16 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
 
         ) : (
           /* ── Sign Up ── */
-          <form className="auth-form" onSubmit={handleSignupSubmit} noValidate>
+          <form className="auth-form signup-form" onSubmit={handleSignupSubmit} noValidate>
             {signupErr && <div className="login-error" role="alert">{signupErr}</div>}
             
             <div className="auth-field">
-              <label htmlFor="m-signup-name" className="auth-label">Full Name</label>
-              <input id="m-signup-name" type="text" name="name"
-                className={`auth-input ${errors.name ? 'auth-input--error' : ''}`}
-                placeholder="John Doe" value={signupData.name}
+              <label htmlFor="m-signup-fullname" className="auth-label">Full Name</label>
+              <input id="m-signup-fullname" type="text" name="fullName"
+                className={`auth-input ${errors.fullName ? 'auth-input--error' : ''}`}
+                placeholder="John Doe" value={signupData.fullName}
                 onChange={handleSignupChange} autoComplete="name" />
-              {errors.name && <span className="auth-error">{errors.name}</span>}
+              {errors.fullName && <span className="auth-error">{errors.fullName}</span>}
             </div>
 
             <div className="auth-field">
@@ -228,10 +254,41 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
             </div>
 
             <div className="auth-field">
+              <label htmlFor="m-signup-phone" className="auth-label">Phone Number</label>
+              <input id="m-signup-phone" type="tel" name="phone"
+                className={`auth-input ${errors.phone ? 'auth-input--error' : ''}`}
+                placeholder="1234567890" value={signupData.phone}
+                onChange={handleSignupChange} autoComplete="tel" />
+              {errors.phone && <span className="auth-error">{errors.phone}</span>}
+            </div>
+
+            <div className="auth-field">
+              <label htmlFor="m-signup-age" className="auth-label">Age</label>
+              <input id="m-signup-age" type="number" name="age"
+                className={`auth-input ${errors.age ? 'auth-input--error' : ''}`}
+                placeholder="18" value={signupData.age}
+                onChange={handleSignupChange} min="13" max="120" />
+              {errors.age && <span className="auth-error">{errors.age}</span>}
+            </div>
+
+            <div className="auth-field">
+              <label htmlFor="m-signup-gender" className="auth-label">Gender</label>
+              <select id="m-signup-gender" name="gender"
+                className={`auth-input ${errors.gender ? 'auth-input--error' : ''}`}
+                value={signupData.gender}
+                onChange={handleSignupChange}>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              {errors.gender && <span className="auth-error">{errors.gender}</span>}
+            </div>
+
+            <div className="auth-field">
               <label htmlFor="m-signup-password" className="auth-label">Password</label>
               <input id="m-signup-password" type="password" name="password"
                 className={`auth-input ${errors.password ? 'auth-input--error' : ''}`}
-                placeholder="Min. 6 characters" value={signupData.password}
+                placeholder="Min. 8 characters" value={signupData.password}
                 onChange={handleSignupChange} autoComplete="new-password" />
               {errors.password && <span className="auth-error">{errors.password}</span>}
             </div>

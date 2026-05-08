@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: [true, 'Phone number is required'],
+      trim: true,
       match: [/^[0-9]{10}$/, 'Please provide a valid 10-digit phone number'],
     },
     gender: {
@@ -49,6 +50,26 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Age is required'],
       min: [13, 'Age must be at least 13'],
       max: [120, 'Age must be less than 120'],
+    },
+    height: {
+      type: Number,
+      min: [50, 'Height must be at least 50 cm'],
+      max: [300, 'Height must be less than 300 cm'],
+      default: null,
+    },
+    weight: {
+      type: Number,
+      min: [20, 'Weight must be at least 20 kg'],
+      max: [500, 'Weight must be less than 500 kg'],
+      default: null,
+    },
+    fitnessGoal: {
+      type: String,
+      enum: {
+        values: ['weight-loss', 'muscle-gain', 'fitness', 'strength', 'endurance', 'flexibility', 'general-health', 'none'],
+        message: 'Invalid fitness goal',
+      },
+      default: 'none',
     },
     membershipPlan: {
       type: String,
@@ -125,6 +146,10 @@ const userSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    joinDate: {
+      type: Date,
+      default: Date.now,
     },
     lastLogin: {
       type: Date,

@@ -1,12 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { authAPI } from '../services/api';
 
-// ── Demo accounts (kept for backward compatibility) ────────────────────────────────────────────
+// Demo accounts for testing (kept for backward compatibility)
 const DEMO_USERS = [
-  { id: 1, email: 'superadmin@gym.com', password: '123456', role: 'superadmin', name: 'Aditya Sharma',  avatar: 'AS' },
-  { id: 2, email: 'admin@gym.com',      password: '123456', role: 'admin',      name: 'Rajesh Kumar',  avatar: 'RK' },
-  { id: 3, email: 'trainer@gym.com',    password: '123456', role: 'trainer',    name: 'Vikram Singh',  avatar: 'VS' },
-  { id: 4, email: 'user@gym.com',       password: '123456', role: 'user',       name: 'Aryan Mehta',   avatar: 'AM' },
+  { id: 1, email: 'superadmin@gym.com', password: '123456', role: 'superadmin', fullName: 'Aditya Sharma',  avatar: 'AS' },
+  { id: 2, email: 'admin@gym.com',      password: '123456', role: 'admin',      fullName: 'Rajesh Kumar',  avatar: 'RK' },
+  { id: 3, email: 'trainer@gym.com',    password: '123456', role: 'trainer',    fullName: 'Vikram Singh',  avatar: 'VS' },
 ];
 
 // Role → redirect path
@@ -14,7 +13,7 @@ export const ROLE_ROUTES = {
   superadmin: '/dashboard/superadmin',
   admin:      '/dashboard/admin',
   trainer:    '/dashboard/trainer',
-  user:       '/dashboard',
+  member:     '/dashboard',
 };
 
 const AuthContext = createContext(null);
@@ -60,7 +59,6 @@ export function AuthProvider({ children }) {
     setLoading(true);
     
     try {
-      // Try real API login first
       const response = await authAPI.login(email, password);
       
       if (response.success && response.data) {
@@ -94,26 +92,22 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const signup = useCallback(async (name, email, password, phone = null) => {
+  const signup = useCallback(async (fullName, email, password, phone = null, gender = 'other', age = 18) => {
     setLoading(true);
     
     try {
-      const response = await authAPI.signup(name, email, password, phone);
+      const response = await authAPI.signup(fullName, email, password, phone, gender, age);
       
       if (response.success && response.data) {
-        const { user: userData, token } = response.data;
-        
-        // Save token and user data
-        localStorage.setItem('gym-auth-token', token);
-        localStorage.setItem('gym-auth-user', JSON.stringify(userData));
-        setUser(userData);
+        // Do NOT auto-login after signup
+        // Just return success without saving token/user data
         setLoading(false);
         
-        return { success: true, user: userData };
+        return { success: true, user: response.data.user };
       }
     } catch (error) {
       setLoading(false);
-      const errorMessage = error.response?.data?.message || 'Signup failed. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
       return { success: false, error: errorMessage };
     }
   }, []);

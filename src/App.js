@@ -68,7 +68,7 @@ function AppShell() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['user']}>
+              <ProtectedRoute allowedRoles={['member']}>
                 <DashboardPage />
               </ProtectedRoute>
             }

@@ -2,100 +2,173 @@ const mongoose = require('mongoose');
 
 /**
  * Notification Schema
- * Defines the structure for system notifications
+ * Manages notifications sent to members by trainers
  */
 const notificationSchema = new mongoose.Schema(
   {
+    recipientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Recipient ID is required'],
+      index: true,
+    },
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Trainer',
+      required: [true, 'Sender ID is required'],
+      index: true,
+    },
+    notificationType: {
+      type: String,
+      enum: {
+        values: [
+          'workout-reminder',
+          'session-reminder',
+          'diet-reminder',
+          'progress-update',
+          'achievement',
+          'membership-expiry',
+          'payment-reminder',
+          'general',
+          'announcement',
+        ],
+        message: 'Invalid notification type',
+      },
+      required: [true, 'Notification type is required'],
+      index: true,
+    },
     title: {
       type: String,
-      required: [true, 'Notification title is required'],
+      required: [true, 'Title is required'],
       trim: true,
-      minlength: [3, 'Title must be at least 3 characters'],
       maxlength: [200, 'Title cannot exceed 200 characters'],
     },
     message: {
       type: String,
-      required: [true, 'Notification message is required'],
+      required: [true, 'Message is required'],
       trim: true,
-      minlength: [5, 'Message must be at least 5 characters'],
       maxlength: [1000, 'Message cannot exceed 1000 characters'],
-    },
-    type: {
-      type: String,
-      enum: {
-        values: ['info', 'warning', 'success', 'alert'],
-        message: 'Type must be info, warning, success, or alert',
-      },
-      default: 'info',
-    },
-    recipientType: {
-      type: String,
-      enum: {
-        values: ['all', 'users', 'trainers', 'admins', 'branches', 'specific'],
-        message: 'Recipient type must be all, users, trainers, admins, branches, or specific',
-      },
-      required: [true, 'Recipient type is required'],
-    },
-    recipientIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
-    branchIds: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Branch',
-      },
-    ],
-    status: {
-      type: String,
-      enum: {
-        values: ['pending', 'sent', 'failed'],
-        message: 'Status must be pending, sent, or failed',
-      },
-      default: 'pending',
     },
     priority: {
       type: String,
-      enum: {
-        values: ['low', 'medium', 'high', 'urgent'],
-        message: 'Priority must be low, medium, high, or urgent',
-      },
+      enum: ['low', 'medium', 'high', 'urgent'],
       default: 'medium',
+      index: true,
     },
-    readBy: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-        },
-        readAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    isRead: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    readAt: {
+      type: Date,
+      default: null,
+    },
     actionUrl: {
       type: String,
+      trim: true,
       default: null,
     },
     actionLabel: {
       type: String,
+      trim: true,
       default: null,
+    },
+    metadata: {
+      workoutId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'WorkoutPlan',
+        default: null,
+      },
+      sessionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Session',
+        default: null,
+      },
+      dietId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DietPlan',
+        default: null,
+      },
+      progressId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Progress',
+        default: null,
+      },
+      customData: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+      },
+    },
+    scheduledFor: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    sentAt: {
+      type: Date,
+      default: Date.now,
     },
     expiresAt: {
       type: Date,
       default: null,
     },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'SuperAdmin',
-      required: [true, 'Creator is required'],
+    pushNotification: {
+      sent: {
+        type: Boolean,
+        default: false,
+      },
+      sentAt: {
+        type: Date,
+        default: null,
+      },
+      deviceTokens: [String],
+      error: {
+        type: String,
+        default: null,
+      },
     },
-    metadata: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
+    emailNotification: {
+      sent: {
+        type: Boolean,
+        default: false,
+      },
+      sentAt: {
+        type: Date,
+        default: null,
+      },
+      error: {
+        type: String,
+        default: null,
+      },
+    },
+    smsNotification: {
+      sent: {
+        type: Boolean,
+        default: false,
+      },
+      sentAt: {
+        type: Date,
+        default: null,
+      },
+      error: {
+        type: String,
+        default: null,
+      },
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'sent', 'delivered', 'failed', 'expired'],
+      default: 'sent',
+      index: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   {
@@ -103,78 +176,107 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
-notificationSchema.index({ recipientType: 1 });
-notificationSchema.index({ status: 1 });
-notificationSchema.index({ type: 1 });
-notificationSchema.index({ createdAt: -1 });
-notificationSchema.index({ expiresAt: 1 });
+// Indexes for efficient queries
+notificationSchema.index({ recipientId: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ senderId: 1, createdAt: -1 });
+notificationSchema.index({ notificationType: 1, createdAt: -1 });
+notificationSchema.index({ scheduledFor: 1, status: 1 });
 
 /**
- * Method to get public notification profile
+ * Method to mark as read
+ */
+notificationSchema.methods.markAsRead = function () {
+  this.isRead = true;
+  this.readAt = Date.now();
+  return this.save();
+};
+
+/**
+ * Method to mark as unread
+ */
+notificationSchema.methods.markAsUnread = function () {
+  this.isRead = false;
+  this.readAt = null;
+  return this.save();
+};
+
+/**
+ * Method to soft delete
+ */
+notificationSchema.methods.softDelete = function () {
+  this.isDeleted = true;
+  this.deletedAt = Date.now();
+  return this.save();
+};
+
+/**
+ * Method to check if expired
+ */
+notificationSchema.methods.isExpired = function () {
+  if (!this.expiresAt) return false;
+  return new Date() > this.expiresAt;
+};
+
+/**
+ * Method to get public profile
  */
 notificationSchema.methods.getPublicProfile = function () {
   return {
     id: this._id,
+    recipientId: this.recipientId,
+    senderId: this.senderId,
+    notificationType: this.notificationType,
     title: this.title,
     message: this.message,
-    type: this.type,
-    recipientType: this.recipientType,
-    recipientIds: this.recipientIds,
-    branchIds: this.branchIds,
-    status: this.status,
     priority: this.priority,
-    readCount: this.readBy.length,
+    isRead: this.isRead,
+    readAt: this.readAt,
     actionUrl: this.actionUrl,
     actionLabel: this.actionLabel,
+    metadata: this.metadata,
+    scheduledFor: this.scheduledFor,
+    sentAt: this.sentAt,
     expiresAt: this.expiresAt,
+    status: this.status,
     isExpired: this.isExpired(),
-    createdBy: this.createdBy,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };
 };
 
 /**
- * Method to check if notification is expired
+ * Static method to get unread count
  */
-notificationSchema.methods.isExpired = function () {
-  if (!this.expiresAt) return false;
-  return new Date() > new Date(this.expiresAt);
+notificationSchema.statics.getUnreadCount = function (recipientId) {
+  return this.countDocuments({
+    recipientId,
+    isRead: false,
+    isDeleted: false,
+  });
 };
 
 /**
- * Method to mark as read by user
+ * Static method to mark all as read
  */
-notificationSchema.methods.markAsRead = function (userId) {
-  const alreadyRead = this.readBy.some((read) => read.userId.toString() === userId.toString());
-  if (!alreadyRead) {
-    this.readBy.push({ userId, readAt: new Date() });
-  }
-  return this.save();
+notificationSchema.statics.markAllAsRead = function (recipientId) {
+  return this.updateMany(
+    { recipientId, isRead: false, isDeleted: false },
+    { isRead: true, readAt: Date.now() }
+  );
 };
 
 /**
- * Method to check if user has read notification
+ * Static method to get notifications by type
  */
-notificationSchema.methods.isReadBy = function (userId) {
-  return this.readBy.some((read) => read.userId.toString() === userId.toString());
-};
-
-/**
- * Static method to get notifications for user
- */
-notificationSchema.statics.getForUser = function (userId, userRole) {
-  const query = {
-    $or: [
-      { recipientType: 'all' },
-      { recipientType: userRole + 's' },
-      { recipientIds: userId },
-    ],
-    status: 'sent',
-    $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
-  };
-  return this.find(query).sort({ createdAt: -1 });
+notificationSchema.statics.getByType = function (recipientId, notificationType, limit = 20) {
+  return this.find({
+    recipientId,
+    notificationType,
+    isDeleted: false,
+  })
+    .populate('senderId', 'fullName email profileImage')
+    .sort({ createdAt: -1 })
+    .limit(limit);
 };
 
 const Notification = mongoose.model('Notification', notificationSchema);

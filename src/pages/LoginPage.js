@@ -1,25 +1,25 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const DEMO_HINTS = [
   { role: 'Super Admin', email: 'superadmin@gym.com', password: '123456' },
-  { role: 'Admin',       email: 'admin@gym.com',      password: '123456' },
-  { role: 'Trainer',     email: 'trainer@gym.com',    password: '123456' },
-  { role: 'Member',      email: 'user@gym.com',        password: '123456' },
+  { role: 'Admin', email: 'admin@gym.com', password: '123456' },
+  { role: 'Trainer', email: 'trainer@gym.com', password: '123456' },
+  { role: 'Member', email: 'user@gym.com', password: '123456' },
 ];
 
 function LoginPage() {
   const { login, isLoggedIn, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm]     = useState({ email: '', password: '' });
-  const [error, setError]   = useState('');
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Already logged in → redirect to their dashboard
-  if (isLoggedIn) {
-    return <Navigate to={ROLE_ROUTES[user.role] || '/'} replace />;
+  // Already logged in → redirect to User Dashboard
+  if (isLoggedIn && user) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleChange = (e) => {
@@ -29,18 +29,20 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!form.email.trim() || !form.password) {
       setError('Please enter both email and password.');
       return;
     }
+
     setLoading(true);
-    
+
     const result = await login(form.email, form.password);
-    
+
     if (result.success) {
-      navigate(ROLE_ROUTES[result.user.role] || '/', { replace: true });
+      navigate("/dashboard", { replace: true });
     } else {
-      setError(result.error);
+      setError(result.error || 'Login failed');
       setLoading(false);
     }
   };
@@ -53,6 +55,7 @@ function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
+
         {/* Header */}
         <div className="login-header">
           <span className="login-logo-icon">⚡</span>
@@ -63,6 +66,7 @@ function LoginPage() {
         {/* Demo hints */}
         <div className="login-demo-hints">
           <p className="login-demo-label">Quick demo login:</p>
+
           <div className="login-demo-grid">
             {DEMO_HINTS.map(h => (
               <button
@@ -79,10 +83,18 @@ function LoginPage() {
 
         {/* Form */}
         <form className="login-form" onSubmit={handleSubmit} noValidate>
-          {error && <div className="login-error" role="alert">{error}</div>}
+
+          {error && (
+            <div className="login-error" role="alert">
+              {error}
+            </div>
+          )}
 
           <div className="auth-field">
-            <label htmlFor="login-email" className="auth-label">Email</label>
+            <label htmlFor="login-email" className="auth-label">
+              Email
+            </label>
+
             <input
               id="login-email"
               type="email"
@@ -97,7 +109,10 @@ function LoginPage() {
           </div>
 
           <div className="auth-field">
-            <label htmlFor="login-password" className="auth-label">Password</label>
+            <label htmlFor="login-password" className="auth-label">
+              Password
+            </label>
+
             <input
               id="login-password"
               type="password"
@@ -117,11 +132,13 @@ function LoginPage() {
           >
             {loading || authLoading ? 'Signing in…' : 'Sign In'}
           </button>
+
         </form>
 
         <p className="login-footer-note">
           All passwords are <strong>123456</strong> for demo accounts.
         </p>
+
       </div>
     </div>
   );

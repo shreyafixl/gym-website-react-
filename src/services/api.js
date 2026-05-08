@@ -45,8 +45,15 @@ api.interceptors.response.use(
 // Auth API endpoints
 export const authAPI = {
   // Sign up new user
-  signup: async (name, email, password, phone = null) => {
-    const response = await api.post('/auth/signup', { name, email, password, phone });
+  signup: async (fullName, email, password, phone = null, gender = 'other', age = 18) => {
+    const response = await api.post('/auth/signup', { 
+      fullName, 
+      email, 
+      password, 
+      phone,
+      gender,
+      age
+    });
     return response.data;
   },
 
@@ -62,9 +69,27 @@ export const authAPI = {
     return response.data;
   },
 
+  // Update user profile
+  updateProfile: async (profileData) => {
+    const response = await api.put('/auth/profile', profileData);
+    return response.data;
+  },
+
+  // Change password
+  changePassword: async (currentPassword, newPassword) => {
+    const response = await api.put('/auth/password', { currentPassword, newPassword });
+    return response.data;
+  },
+
   // Logout user
   logout: async () => {
     const response = await api.post('/auth/logout');
+    return response.data;
+  },
+
+  // Refresh token
+  refreshToken: async (refreshToken) => {
+    const response = await api.post('/auth/refresh', { refreshToken });
     return response.data;
   },
 };

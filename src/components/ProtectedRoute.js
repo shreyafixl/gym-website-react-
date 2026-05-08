@@ -21,6 +21,7 @@ function ProtectedRoute({ children, allowedRoles, redirectTo = '/login' }) {
       superadmin: '/dashboard/superadmin',
       admin:      '/dashboard/admin',
       trainer:    '/dashboard/trainer',
+      member:     '/dashboard',
       user:       '/dashboard',
     };
     return <Navigate to={roleRoutes[user.role] || '/'} replace />;
