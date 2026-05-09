@@ -10,62 +10,62 @@ const {
   bulkUpdateUsers,
   exportUsers,
 } = require('../controllers/adminUserController');
-const { protectAdmin, checkPermission } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * @route   GET /api/admin/users/stats
  * @desc    Get user statistics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/stats', protectAdmin, checkPermission('canViewReports'), getUserStats);
+router.get('/stats', protectAdmin, getUserStats);
 
 /**
  * @route   GET /api/admin/users/export
  * @desc    Export users data
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/export', protectAdmin, checkPermission('canViewReports'), exportUsers);
+router.get('/export', protectAdmin, exportUsers);
 
 /**
  * @route   PUT /api/admin/users/bulk-update
  * @desc    Bulk update users
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.put('/bulk-update', protectAdmin, checkPermission('canManageUsers'), bulkUpdateUsers);
+router.put('/bulk-update', protectAdmin, bulkUpdateUsers);
 
 /**
  * @route   GET /api/admin/users
  * @desc    Get all users with pagination and filtering
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/', protectAdmin, checkPermission('canManageUsers'), getAllUsers);
+router.get('/', protectAdmin, getAllUsers);
 
 /**
  * @route   POST /api/admin/users
  * @desc    Create new user
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/', protectAdmin, checkPermission('canManageUsers'), createUser);
+router.post('/', protectAdmin, createUser);
 
 /**
  * @route   GET /api/admin/users/:id
  * @desc    Get user by ID
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/:id', protectAdmin, checkPermission('canManageUsers'), getUserById);
+router.get('/:id', protectAdmin, getUserById);
 
 /**
  * @route   PUT /api/admin/users/:id
  * @desc    Update user
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.put('/:id', protectAdmin, checkPermission('canManageUsers'), updateUser);
+router.put('/:id', protectAdmin, updateUser);
 
 /**
  * @route   DELETE /api/admin/users/:id
  * @desc    Delete user
- * @access  Private (Admin with canManageUsers and canDeleteRecords permissions)
+ * @access  Private (Admin)
  */
-router.delete('/:id', protectAdmin, checkPermission('canManageUsers'), checkPermission('canDeleteRecords'), deleteUser);
+router.delete('/:id', protectAdmin, deleteUser);
 
 module.exports = router;

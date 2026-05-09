@@ -1,5 +1,6 @@
 import { useState, useCallback, memo } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import {
   FaTachometerAlt, FaUsers, FaCodeBranch, FaFileAlt, FaTags,
   FaChartLine, FaCog, FaShieldAlt, FaHome, FaUserShield,
@@ -2120,12 +2121,18 @@ function TopbarBell({ onNav }) {
 
 // ─── MAIN EXPORT ──────────────────────────────────────────────────────────────
 export default function SuperAdminDashboardPage() {
+  const { user, isLoggedIn } = useAuth();
   const [active, setActive] = useState(DASHBOARD_ITEM.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { activeForm, formData, openForm, closeForm, isOpen } = useFormModal();
   const [toast, setToast] = useState(null);
   const { themeId, setThemeId, themes } = useDashboardTheme();
   const go = useCallback(id => setActive(id), []);
+
+  // Check if user is super admin
+  if (!isLoggedIn || user?.role !== 'superadmin') {
+    return <Navigate to="/login" replace />;
+  }
 
   const allItems = [DASHBOARD_ITEM, ...NAV_GROUPS.flatMap(g => g.items)];
   const currentLabel = allItems.find(i => i.id === active)?.label || "Dashboard";

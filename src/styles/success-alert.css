@@ -1,0 +1,68 @@
+/* Success Alert Styles */
+
+.success-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #efe;
+  border: 1px solid #cfc;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: slideIn 0.3s ease-out;
+}
+
+.success-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.success-alert-icon {
+  color: #3c3;
+  font-size: 18px;
+}
+
+.success-alert-message {
+  color: #3c3;
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.success-alert-close {
+  background: none;
+  border: none;
+  color: #3c3;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.success-alert-close:hover {
+  opacity: 0.7;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .success-alert {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}

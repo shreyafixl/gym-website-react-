@@ -12,30 +12,42 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/generate
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  console.log('🔐 [SuperAdmin Login] Attempt:', { email });
+
   // Validate input
   if (!email || !password) {
+    console.log('❌ [SuperAdmin Login] Missing email or password');
     throw ApiError.badRequest('Please provide email and password');
   }
 
   // Find admin by email (including password field)
+  console.log('🔍 [SuperAdmin Login] Searching for admin by email...');
   const admin = await SuperAdmin.findByEmail(email);
 
   // Check if admin exists
   if (!admin) {
+    console.log('❌ [SuperAdmin Login] Admin not found:', email);
     throw ApiError.unauthorized('Invalid email or password');
   }
 
+  console.log('✅ [SuperAdmin Login] Admin found:', { id: admin._id, email: admin.email });
+
   // Check if admin is active
   if (!admin.isActive) {
+    console.log('❌ [SuperAdmin Login] Account deactivated:', email);
     throw ApiError.forbidden('Account is deactivated. Please contact support.');
   }
 
   // Verify password
+  console.log('🔑 [SuperAdmin Login] Verifying password...');
   const isPasswordMatch = await admin.comparePassword(password);
 
   if (!isPasswordMatch) {
+    console.log('❌ [SuperAdmin Login] Password mismatch for:', email);
     throw ApiError.unauthorized('Invalid email or password');
   }
+
+  console.log('✅ [SuperAdmin Login] Password verified');
 
   // Update last login info
   admin.lastLogin = new Date();
@@ -43,11 +55,14 @@ const login = asyncHandler(async (req, res) => {
   await admin.save();
 
   // Generate tokens
-  const accessToken = generateAccessToken(admin._id, admin.role);
+  console.log('🎫 [SuperAdmin Login] Generating tokens...');
+  const accessToken = generateAccessToken(admin._id, admin.role, admin.email);
   const refreshToken = generateRefreshToken(admin._id);
 
   // Get public profile
   const profile = admin.getPublicProfile();
+
+  console.log('✨ [SuperAdmin Login] Login successful:', { id: admin._id, email: admin.email });
 
   // Send response
   ApiResponse.success(

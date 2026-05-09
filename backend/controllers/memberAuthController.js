@@ -83,7 +83,7 @@ const signup = asyncHandler(async (req, res) => {
   await user.save();
 
   // Generate tokens
-  const accessToken = generateAccessToken(user._id, user.role);
+  const accessToken = generateAccessToken(user._id, user.role, user.email);
   const refreshToken = generateRefreshToken(user._id);
 
   const profile = user.getPublicProfile();
@@ -136,7 +136,7 @@ const login = asyncHandler(async (req, res) => {
   user.lastLogin = new Date();
   await user.save();
 
-  const accessToken = generateAccessToken(user._id, user.role);
+  const accessToken = generateAccessToken(user._id, user.role, user.email);
   const refreshToken = generateRefreshToken(user._id);
 
   const profile = user.getPublicProfile();

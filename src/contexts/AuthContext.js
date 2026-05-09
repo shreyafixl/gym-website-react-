@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { authService } from '../services/authService';
 
 // Demo accounts for testing (kept for backward compatibility)
 const DEMO_USERS = [
-  { id: 1, email: 'superadmin@gym.com', password: '123456', role: 'superadmin', fullName: 'Aditya Sharma',  avatar: 'AS' },
-  { id: 2, email: 'admin@gym.com',      password: '123456', role: 'admin',      fullName: 'Rajesh Kumar',  avatar: 'RK' },
-  { id: 3, email: 'trainer@gym.com',    password: '123456', role: 'trainer',    fullName: 'Vikram Singh',  avatar: 'VS' },
+  { id: 1, email: 'superadmin@gym.com', password: '12345678', role: 'superadmin', fullName: 'Aditya Sharma',  avatar: 'AS' },
+  { id: 2, email: 'admin@gym.com',      password: '12345678', role: 'admin',      fullName: 'Rajesh Kumar',  avatar: 'RK' },
+  { id: 3, email: 'trainer@gym.com',    password: '12345678', role: 'trainer',    fullName: 'Vikram Singh',  avatar: 'VS' },
 ];
 
 // Role → redirect path
@@ -38,10 +38,11 @@ export function AuthProvider({ children }) {
     
     if (token && savedUser) {
       // Verify token is still valid by fetching user data
-      authAPI.getMe()
+      authService.getMe()
         .then(response => {
-          if (response.success && response.data.user) {
-            const userData = response.data.user;
+          if (response.success && response.data) {
+            // Handle different response structures for different roles
+            const userData = response.data.admin || response.data.trainer || response.data.user || response.data;
             localStorage.setItem('gym-auth-user', JSON.stringify(userData));
             setUser(userData);
           }
@@ -59,10 +60,28 @@ export function AuthProvider({ children }) {
     setLoading(true);
     
     try {
-      const response = await authAPI.login(email, password);
+      console.log('🔑 AuthContext.login called for:', email);
+      const response = await authService.login(email, password);
+      
+      console.log('📊 AuthContext received response:', {
+        success: response.success,
+        hasData: !!response.data,
+        error: response.error,
+      });
       
       if (response.success && response.data) {
-        const { user: userData, token } = response.data;
+        const { admin: userData, token } = response.data;
+        
+        if (!userData) {
+          console.error('❌ No user data in response');
+          setLoading(false);
+          return { success: false, error: 'Login failed: No user data' };
+        }
+        
+        console.log('✅ Login successful, storing user data:', {
+          role: userData?.role,
+          email: userData?.email,
+        });
         
         // Save token and user data
         localStorage.setItem('gym-auth-token', token);
@@ -72,13 +91,21 @@ export function AuthProvider({ children }) {
         
         return { success: true, user: userData };
       }
+      
+      // If response.success is false, return error
+      if (!response.success) {
+        setLoading(false);
+        return { success: false, error: response.error || 'Login failed' };
+      }
     } catch (error) {
+      console.error('❌ AuthContext.login error:', error);
       // If API fails, fall back to demo accounts for backward compatibility
       const found = DEMO_USERS.find(
         u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
       );
       
       if (found) {
+        console.log('⚠️  Using demo account fallback');
         const { password: _pw, ...safeUser } = found;
         localStorage.setItem('gym-auth-user', JSON.stringify(safeUser));
         setUser(safeUser);
@@ -88,23 +115,36 @@ export function AuthProvider({ children }) {
       
       setLoading(false);
       const errorMessage = error.response?.data?.message || 'Invalid email or password.';
+      console.error('❌ Login failed:', errorMessage);
       return { success: false, error: errorMessage };
     }
+    
+    // Fallback return
+    setLoading(false);
+    return { success: false, error: 'Login failed' };
   }, []);
 
   const signup = useCallback(async (fullName, email, password, phone = null, gender = 'other', age = 18) => {
     setLoading(true);
     
     try {
-      const response = await authAPI.signup(fullName, email, password, phone, gender, age);
+      const response = await authService.signup(fullName, email, password, phone, gender, age);
       
       if (response.success && response.data) {
-        // Do NOT auto-login after signup
-        // Just return success without saving token/user data
+        const { user, token } = response.data;
+        
+        // Save token and user data
+        localStorage.setItem('gym-auth-token', token);
+        localStorage.setItem('gym-auth-user', JSON.stringify(user));
+        setUser(user);
         setLoading(false);
         
-        return { success: true, user: response.data.user };
+        return { success: true, user };
       }
+      
+      setLoading(false);
+      const errorMessage = response.error || 'Signup failed. Please try again.';
+      return { success: false, error: errorMessage };
     } catch (error) {
       setLoading(false);
       const errorMessage = error.response?.data?.message || error.message || 'Signup failed. Please try again.';
@@ -117,7 +157,7 @@ export function AuthProvider({ children }) {
       // Call logout API if token exists
       const token = localStorage.getItem('gym-auth-token');
       if (token) {
-        await authAPI.logout();
+        await authService.logout();
       }
     } catch (error) {
       // Ignore logout API errors

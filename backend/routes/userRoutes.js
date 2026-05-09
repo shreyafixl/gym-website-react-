@@ -12,18 +12,16 @@ const {
   getUserAttendance,
   getUserStats,
 } = require('../controllers/userController');
-const { protect } = require('../middleware/authMiddleware');
-const { superAdminOnly } = require('../middleware/roleMiddleware');
+const { protectSuperAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * User Management Routes
  * Base path: /api/superadmin/users
- * All routes require authentication and super admin role
+ * All routes require SuperAdmin authentication
  */
 
-// Apply authentication and authorization to all routes
-router.use(protect);
-router.use(superAdminOnly);
+// Apply SuperAdmin authentication to all routes
+router.use(protectSuperAdmin);
 
 // Statistics route (must be before /:id to avoid conflict)
 router.get('/stats', getUserStats);

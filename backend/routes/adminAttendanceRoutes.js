@@ -9,55 +9,55 @@ const {
   deleteAttendance,
   getAttendanceById,
 } = require('../controllers/adminAttendanceController');
-const { protectAdmin, checkPermission } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * @route   GET /api/admin/attendance/stats
  * @desc    Get attendance statistics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/stats', protectAdmin, checkPermission('canViewReports'), getAttendanceStats);
+router.get('/stats', protectAdmin, getAttendanceStats);
 
 /**
  * @route   POST /api/admin/attendance/bulk
  * @desc    Bulk create attendance records
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/bulk', protectAdmin, checkPermission('canManageUsers'), bulkCreateAttendance);
+router.post('/bulk', protectAdmin, bulkCreateAttendance);
 
 /**
  * @route   GET /api/admin/attendance
  * @desc    Get all attendance records with filtering
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/', protectAdmin, checkPermission('canManageUsers'), getAllAttendance);
+router.get('/', protectAdmin, getAllAttendance);
 
 /**
  * @route   POST /api/admin/attendance
  * @desc    Create attendance record (check-in)
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/', protectAdmin, checkPermission('canManageUsers'), createAttendance);
+router.post('/', protectAdmin, createAttendance);
 
 /**
  * @route   GET /api/admin/attendance/:id
  * @desc    Get attendance by ID
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/:id', protectAdmin, checkPermission('canManageUsers'), getAttendanceById);
+router.get('/:id', protectAdmin, getAttendanceById);
 
 /**
  * @route   PUT /api/admin/attendance/:id
  * @desc    Update attendance record (check-out or edit)
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.put('/:id', protectAdmin, checkPermission('canManageUsers'), updateAttendance);
+router.put('/:id', protectAdmin, updateAttendance);
 
 /**
  * @route   DELETE /api/admin/attendance/:id
  * @desc    Delete attendance record
- * @access  Private (Admin with canManageUsers and canDeleteRecords permissions)
+ * @access  Private (Admin)
  */
-router.delete('/:id', protectAdmin, checkPermission('canManageUsers'), checkPermission('canDeleteRecords'), deleteAttendance);
+router.delete('/:id', protectAdmin, deleteAttendance);
 
 module.exports = router;

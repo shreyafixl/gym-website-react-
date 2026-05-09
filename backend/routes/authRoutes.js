@@ -7,8 +7,7 @@ const {
   refreshToken,
   updatePassword,
 } = require('../controllers/authController');
-const { protect } = require('../middleware/authMiddleware');
-const { superAdminOnly } = require('../middleware/roleMiddleware');
+const { protectSuperAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * Authentication Routes
@@ -20,7 +19,7 @@ router.post('/login', login);
 router.post('/refresh', refreshToken);
 
 // Protected routes (require authentication)
-router.use(protect); // All routes below this require authentication
+router.use(protectSuperAdmin); // All routes below this require SuperAdmin authentication
 
 router.get('/me', getMe);
 router.post('/logout', logout);

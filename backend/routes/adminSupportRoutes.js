@@ -13,83 +13,83 @@ const {
   reopenTicket,
   getTicketStats,
 } = require('../controllers/adminSupportController');
-const { protectAdmin, checkPermission } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * @route   GET /api/admin/support/stats
  * @desc    Get ticket statistics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/stats', protectAdmin, checkPermission('canViewReports'), getTicketStats);
+router.get('/stats', protectAdmin, getTicketStats);
 
 /**
  * @route   GET /api/admin/support
  * @desc    Get all support tickets with filtering
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/', protectAdmin, checkPermission('canManageUsers'), getAllTickets);
+router.get('/', protectAdmin, getAllTickets);
 
 /**
  * @route   POST /api/admin/support
  * @desc    Create support ticket
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/', protectAdmin, checkPermission('canManageUsers'), createTicket);
+router.post('/', protectAdmin, createTicket);
 
 /**
  * @route   GET /api/admin/support/:id
  * @desc    Get ticket by ID
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/:id', protectAdmin, checkPermission('canManageUsers'), getTicketById);
+router.get('/:id', protectAdmin, getTicketById);
 
 /**
  * @route   PUT /api/admin/support/:id
  * @desc    Update support ticket
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.put('/:id', protectAdmin, checkPermission('canManageUsers'), updateTicket);
+router.put('/:id', protectAdmin, updateTicket);
 
 /**
  * @route   DELETE /api/admin/support/:id
  * @desc    Delete support ticket
- * @access  Private (Admin with canManageUsers and canDeleteRecords permissions)
+ * @access  Private (Admin)
  */
-router.delete('/:id', protectAdmin, checkPermission('canManageUsers'), checkPermission('canDeleteRecords'), deleteTicket);
+router.delete('/:id', protectAdmin, deleteTicket);
 
 /**
  * @route   POST /api/admin/support/:id/assign
  * @desc    Assign ticket to user
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/:id/assign', protectAdmin, checkPermission('canManageUsers'), assignTicket);
+router.post('/:id/assign', protectAdmin, assignTicket);
 
 /**
  * @route   POST /api/admin/support/:id/comment
  * @desc    Add comment to ticket
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/:id/comment', protectAdmin, checkPermission('canManageUsers'), addComment);
+router.post('/:id/comment', protectAdmin, addComment);
 
 /**
  * @route   POST /api/admin/support/:id/resolve
  * @desc    Resolve ticket
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/:id/resolve', protectAdmin, checkPermission('canManageUsers'), resolveTicket);
+router.post('/:id/resolve', protectAdmin, resolveTicket);
 
 /**
  * @route   POST /api/admin/support/:id/close
  * @desc    Close ticket
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/:id/close', protectAdmin, checkPermission('canManageUsers'), closeTicket);
+router.post('/:id/close', protectAdmin, closeTicket);
 
 /**
  * @route   POST /api/admin/support/:id/reopen
  * @desc    Reopen ticket
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/:id/reopen', protectAdmin, checkPermission('canManageUsers'), reopenTicket);
+router.post('/:id/reopen', protectAdmin, reopenTicket);
 
 module.exports = router;

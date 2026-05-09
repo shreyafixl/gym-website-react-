@@ -105,7 +105,7 @@ superAdminSchema.methods.comparePassword = async function (enteredPassword) {
 superAdminSchema.methods.getPublicProfile = function () {
   return {
     id: this._id,
-    name: this.name,
+    fullName: this.name,
     email: this.email,
     role: this.role,
     company: this.company,

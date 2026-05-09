@@ -1,33 +1,37 @@
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
- * Wraps a route and enforces authentication + optional role check.
- *
- * Props:
- *   allowedRoles  – array of roles that may access this route (omit to allow any logged-in user)
- *   redirectTo    – where to send unauthenticated visitors (default: '/login')
+ * Protected Route Component
+ * Ensures only authenticated users with specific roles can access routes
  */
-function ProtectedRoute({ children, allowedRoles, redirectTo = '/login' }) {
+const ProtectedRoute = ({ children, allowedRoles = null, requiredRole = null }) => {
   const { user, isLoggedIn } = useAuth();
 
+  console.log('🔐 ProtectedRoute check:', {
+    isLoggedIn,
+    userRole: user?.role,
+    allowedRoles,
+    requiredRole,
+  });
+
+  // Check if user is logged in
   if (!isLoggedIn) {
-    return <Navigate to={redirectTo} replace />;
+    console.log('❌ ProtectedRoute: User not logged in, redirecting to /login');
+    return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Logged in but wrong role — send them to their own dashboard
-    const roleRoutes = {
-      superadmin: '/dashboard/superadmin',
-      admin:      '/dashboard/admin',
-      trainer:    '/dashboard/trainer',
-      member:     '/dashboard',
-      user:       '/dashboard',
-    };
-    return <Navigate to={roleRoutes[user.role] || '/'} replace />;
+  // Check if user has required role (support both allowedRoles array and requiredRole string)
+  const roleToCheck = requiredRole || (allowedRoles && allowedRoles[0]);
+  
+  if (roleToCheck && user?.role !== roleToCheck) {
+    console.log('❌ ProtectedRoute: User role mismatch, redirecting to /unauthorized');
+    return <Navigate to="/unauthorized" replace />;
   }
 
+  console.log('✅ ProtectedRoute: Access granted');
   return children;
-}
+};
 
 export default ProtectedRoute;

@@ -9,8 +9,7 @@ const {
   logout,
   refreshToken,
 } = require('../controllers/memberAuthController');
-const { protect } = require('../middleware/authMiddleware');
-const { authorize } = require('../middleware/roleMiddleware');
+const { protectMember } = require('../middleware/roleAuthMiddleware');
 
 /**
  * Member Authentication Routes
@@ -23,12 +22,12 @@ router.post('/login', login);
 router.post('/refresh', refreshToken);
 
 // Protected routes (require authentication)
-router.use(protect);
+router.use(protectMember);
 
 // Member only routes
-router.get('/me', authorize('member'), getMe);
-router.put('/profile', authorize('member'), updateProfile);
-router.put('/password', authorize('member'), changePassword);
-router.post('/logout', authorize('member'), logout);
+router.get('/me', getMe);
+router.put('/profile', updateProfile);
+router.put('/password', changePassword);
+router.post('/logout', logout);
 
 module.exports = router;

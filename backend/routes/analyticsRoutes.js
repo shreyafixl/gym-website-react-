@@ -12,18 +12,16 @@ const {
   getTrainerReport,
   getBranchPerformanceReport,
 } = require('../controllers/analyticsController');
-const { protect } = require('../middleware/authMiddleware');
-const { superAdminOnly } = require('../middleware/roleMiddleware');
+const { protectSuperAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * Analytics & Reporting Routes
  * Base path: /api/superadmin/analytics
- * All routes require authentication and super admin role
+ * All routes require SuperAdmin authentication
  */
 
-// Apply authentication and authorization to all routes
-router.use(protect);
-router.use(superAdminOnly);
+// Apply SuperAdmin authentication to all routes
+router.use(protectSuperAdmin);
 
 // ============================================================================
 // DASHBOARD ANALYTICS ROUTES

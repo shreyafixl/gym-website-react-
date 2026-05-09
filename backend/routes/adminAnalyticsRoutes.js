@@ -7,41 +7,41 @@ const {
   getAttendanceAnalytics,
   getClassAnalytics,
 } = require('../controllers/adminAnalyticsController');
-const { protectAdmin, checkPermission } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin } = require('../middleware/roleAuthMiddleware');
 
 /**
  * @route   GET /api/admin/analytics/dashboard
  * @desc    Get dashboard KPIs and overview analytics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/dashboard', protectAdmin, checkPermission('canViewReports'), getDashboardAnalytics);
+router.get('/dashboard', protectAdmin, getDashboardAnalytics);
 
 /**
  * @route   GET /api/admin/analytics/revenue
  * @desc    Get revenue analytics with chart data
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/revenue', protectAdmin, checkPermission('canViewReports'), getRevenueAnalytics);
+router.get('/revenue', protectAdmin, getRevenueAnalytics);
 
 /**
  * @route   GET /api/admin/analytics/members
  * @desc    Get member analytics with growth trends
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/members', protectAdmin, checkPermission('canViewReports'), getMemberAnalytics);
+router.get('/members', protectAdmin, getMemberAnalytics);
 
 /**
  * @route   GET /api/admin/analytics/attendance
  * @desc    Get attendance analytics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/attendance', protectAdmin, checkPermission('canViewReports'), getAttendanceAnalytics);
+router.get('/attendance', protectAdmin, getAttendanceAnalytics);
 
 /**
  * @route   GET /api/admin/analytics/classes
  * @desc    Get class/session analytics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/classes', protectAdmin, checkPermission('canViewReports'), getClassAnalytics);
+router.get('/classes', protectAdmin, getClassAnalytics);
 
 module.exports = router;

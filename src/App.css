@@ -2813,6 +2813,45 @@ address {
   width: 100%;
 }
 
+.auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-wrapper .auth-input {
+  padding-right: 40px;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+  outline: none;
+}
+
+.auth-password-toggle:hover {
+  color: var(--accent);
+  transform: scale(1.1);
+}
+
+.auth-password-toggle:active {
+  transform: scale(0.95);
+}
+
+.auth-input:focus ~ .auth-password-toggle {
+  color: var(--accent);
+}
+
 .auth-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(232, 98, 42, 0.15);

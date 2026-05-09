@@ -381,6 +381,7 @@ trainerSchema.methods.getPublicProfile = function () {
     sessionsCompleted: this.sessionsCompleted,
     isActive: this.isActive,
     attendanceCount: this.attendance.length,
+    role: 'trainer',
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

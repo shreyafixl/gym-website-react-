@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import Modal from './Modal';
 import { useAuth, ROLE_ROUTES } from '../contexts/AuthContext';
 
@@ -18,6 +19,9 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
   const [loginErr,   setLoginErr]   = useState('');
   const [signupErr,  setSignupErr]  = useState('');
   const [loading,    setLoading]    = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
 
   const handleClose = useCallback(() => {
     setLoginData(INITIAL_LOGIN);
@@ -27,6 +31,9 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
     setLoginErr('');
     setSignupErr('');
     setLoading(false);
+    setShowLoginPassword(false);
+    setShowSignupPassword(false);
+    setShowSignupConfirmPassword(false);
     setMode(defaultMode);
     onClose();
   }, [onClose, defaultMode]);
@@ -117,14 +124,9 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
       setLoading(false);
 
       if (result.success) {
-        setSubmitted(true);
-        // After 2 seconds, close modal and redirect to home with login modal
-        setTimeout(() => {
-          handleClose();
-          // Redirect to home page
-          navigate('/');
-          // The parent component (Navbar) will handle opening the login modal
-        }, 2000);
+        // Auto-login after successful signup
+        handleClose();
+        navigate(ROLE_ROUTES[result.role] || '/dashboard');
       } else {
         setSignupErr(result.error || 'Signup failed. Please try again.');
       }
@@ -169,8 +171,7 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
           <div className="auth-success">
             <span className="auth-success-icon">✓</span>
             <h3>Account created!</h3>
-            <p>Your account has been successfully created. Please log in with your email and password to continue.</p>
-            <button className="btn btn-primary btn-full" onClick={() => { setSubmitted(false); switchMode('login'); setLoginData({ email: signupData.email, password: '' }); }}>Go to Login</button>
+            <p>Your account has been successfully created. Redirecting to your dashboard...</p>
           </div>
 
         ) : mode === 'login' ? (
@@ -192,7 +193,7 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
                     type="button"
                     className="login-demo-btn"
                     onClick={() => {
-                      setLoginData({ email: h.email, password: '123456' });
+                      setLoginData({ email: h.email, password: '12345678' });
                       setLoginErr('');
                       setErrors({});
                     }}
@@ -214,10 +215,21 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
 
             <div className="auth-field">
               <label htmlFor="m-login-password" className="auth-label">Password</label>
-              <input id="m-login-password" type="password" name="password"
-                className={`auth-input ${errors.password ? 'auth-input--error' : ''}`}
-                placeholder="Enter your password" value={loginData.password}
-                onChange={handleLoginChange} autoComplete="current-password" />
+              <div className="auth-input-wrapper">
+                <input id="m-login-password" type={showLoginPassword ? 'text' : 'password'} name="password"
+                  className={`auth-input ${errors.password ? 'auth-input--error' : ''}`}
+                  placeholder="Enter your password" value={loginData.password}
+                  onChange={handleLoginChange} autoComplete="current-password" />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                  tabIndex="-1"
+                >
+                  {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
               {errors.password && <span className="auth-error">{errors.password}</span>}
             </div>
 
@@ -286,19 +298,41 @@ function AuthModal({ isOpen, onClose, defaultMode = 'login' }) {
 
             <div className="auth-field">
               <label htmlFor="m-signup-password" className="auth-label">Password</label>
-              <input id="m-signup-password" type="password" name="password"
-                className={`auth-input ${errors.password ? 'auth-input--error' : ''}`}
-                placeholder="Min. 8 characters" value={signupData.password}
-                onChange={handleSignupChange} autoComplete="new-password" />
+              <div className="auth-input-wrapper">
+                <input id="m-signup-password" type={showSignupPassword ? 'text' : 'password'} name="password"
+                  className={`auth-input ${errors.password ? 'auth-input--error' : ''}`}
+                  placeholder="Min. 8 characters" value={signupData.password}
+                  onChange={handleSignupChange} autoComplete="new-password" />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowSignupPassword(!showSignupPassword)}
+                  aria-label={showSignupPassword ? 'Hide password' : 'Show password'}
+                  tabIndex="-1"
+                >
+                  {showSignupPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
               {errors.password && <span className="auth-error">{errors.password}</span>}
             </div>
 
             <div className="auth-field">
               <label htmlFor="m-signup-confirm" className="auth-label">Confirm Password</label>
-              <input id="m-signup-confirm" type="password" name="confirmPassword"
-                className={`auth-input ${errors.confirmPassword ? 'auth-input--error' : ''}`}
-                placeholder="Re-enter your password" value={signupData.confirmPassword}
-                onChange={handleSignupChange} autoComplete="new-password" />
+              <div className="auth-input-wrapper">
+                <input id="m-signup-confirm" type={showSignupConfirmPassword ? 'text' : 'password'} name="confirmPassword"
+                  className={`auth-input ${errors.confirmPassword ? 'auth-input--error' : ''}`}
+                  placeholder="Re-enter your password" value={signupData.confirmPassword}
+                  onChange={handleSignupChange} autoComplete="new-password" />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                  aria-label={showSignupConfirmPassword ? 'Hide password' : 'Show password'}
+                  tabIndex="-1"
+                >
+                  {showSignupConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
               {errors.confirmPassword && <span className="auth-error">{errors.confirmPassword}</span>}
             </div>
 

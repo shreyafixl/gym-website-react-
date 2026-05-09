@@ -825,6 +825,7 @@
   font-size: 0.7rem; 
   transition: transform 0.3s ease;
   display: inline-block;
+  color: var(--text-secondary);
 }
 .db-nav-chevron--open { 
   transform: rotate(-90deg); 

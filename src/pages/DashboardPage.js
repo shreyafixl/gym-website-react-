@@ -1,5 +1,6 @@
 import { useState, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
+import { FaAngleDown } from "react-icons/fa";
 import { userData, notifications } from "../data/dashboardData";
 import { useDashboardTheme } from "../components/DashboardThemeSwitcher";
 import DashboardThemeSwitcher from "../components/DashboardThemeSwitcher";
@@ -200,7 +201,9 @@ function Sidebar({ active, onNav, open, onClose }) {
                     {!collapsed && <span>{group.label}</span>}
                   </span>
                   {!collapsed && (
-                    <span className={`db-nav-chevron ${isOpen ? "db-nav-chevron--open" : ""}`}>▾</span>
+                    <span className={`db-nav-chevron ${isOpen ? "db-nav-chevron--open" : ""}`}>
+                      <FaAngleDown />
+                    </span>
                   )}
                 </button>
                 {isOpen && (

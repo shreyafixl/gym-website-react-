@@ -161,6 +161,39 @@ app.use('/api/trainer/notifications', require('./routes/trainerNotificationRoute
 // Trainer Dashboard Analytics (for trainer dashboard)
 app.use('/api/trainer/dashboard', require('./routes/trainerDashboardRoutes'));
 
+// Member Dashboard (for member dashboard)
+app.use('/api/member/dashboard', require('./routes/memberDashboardRoutes'));
+
+// Member Workout (for member dashboard)
+app.use('/api/member/workouts', require('./routes/memberWorkoutRoutes'));
+
+// Member Diet (for member dashboard)
+app.use('/api/member/diets', require('./routes/memberDietRoutes'));
+
+// Member Attendance (for member dashboard)
+app.use('/api/member/attendance', require('./routes/memberAttendanceRoutes'));
+
+// Member Progress Tracking (for member dashboard)
+app.use('/api/member/progress', require('./routes/memberProgressRoutes'));
+
+// Member Session Booking (for member dashboard)
+app.use('/api/member/sessions', require('./routes/memberSessionRoutes'));
+
+// Member Notifications (for member dashboard)
+app.use('/api/member/notifications', require('./routes/memberNotificationRoutes'));
+
+// Member Membership (for member dashboard)
+app.use('/api/member/membership', require('./routes/memberMembershipRoutes'));
+
+// Member Profile (for member dashboard)
+app.use('/api/member/profile', require('./routes/memberProfileRoutes'));
+
+// Member Goals (for member dashboard)
+app.use('/api/member/goals', require('./routes/memberGoalRoutes'));
+
+// Member Support (for member dashboard)
+app.use('/api/member/support', require('./routes/memberSupportRoutes'));
+
 // Super Admin Routes
 app.use('/api/superadmin/auth', require('./routes/authRoutes'));
 app.use('/api/superadmin/users', require('./routes/userRoutes'));

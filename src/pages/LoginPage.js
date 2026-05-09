@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ROLE_ROUTES } from '../contexts/AuthContext';
 
 const DEMO_HINTS = [
-  { role: 'Super Admin', email: 'superadmin@gym.com', password: '123456' },
-  { role: 'Admin', email: 'admin@gym.com', password: '123456' },
-  { role: 'Trainer', email: 'trainer@gym.com', password: '123456' },
-  { role: 'Member', email: 'user@gym.com', password: '123456' },
+  { role: 'Super Admin', email: 'superadmin@gym.com', password: '12345678' },
+  { role: 'Admin', email: 'admin@gym.com', password: '12345678' },
+  { role: 'Trainer', email: 'trainer@gym.com', password: '12345678' },
+  { role: 'Member', email: 'user@gym.com', password: '12345678' },
 ];
 
 function LoginPage() {
@@ -17,9 +18,10 @@ function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Already logged in → redirect to User Dashboard
+  // Already logged in → redirect to appropriate dashboard based on role
   if (isLoggedIn && user) {
-    return <Navigate to="/dashboard" replace />;
+    const redirectPath = ROLE_ROUTES[user.role] || '/dashboard';
+    return <Navigate to={redirectPath} replace />;
   }
 
   const handleChange = (e) => {
@@ -39,10 +41,12 @@ function LoginPage() {
 
     const result = await login(form.email, form.password);
 
-    if (result.success) {
-      navigate("/dashboard", { replace: true });
+    if (result && result.success && result.user) {
+      // Redirect based on user role
+      const redirectPath = ROLE_ROUTES[result.user.role] || '/dashboard';
+      navigate(redirectPath, { replace: true });
     } else {
-      setError(result.error || 'Login failed');
+      setError(result?.error || 'Login failed');
       setLoading(false);
     }
   };
@@ -136,7 +140,7 @@ function LoginPage() {
         </form>
 
         <p className="login-footer-note">
-          All passwords are <strong>123456</strong> for demo accounts.
+          All passwords are <strong>12345678</strong> for demo accounts.
         </p>
 
       </div>

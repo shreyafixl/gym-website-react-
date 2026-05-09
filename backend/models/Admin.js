@@ -155,7 +155,7 @@ adminSchema.methods.comparePassword = async function (enteredPassword) {
 adminSchema.methods.getPublicProfile = function () {
   return {
     id: this._id,
-    name: this.name,
+    fullName: this.name,
     email: this.email,
     role: this.role,
     phone: this.phone,

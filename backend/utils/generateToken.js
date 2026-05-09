@@ -4,11 +4,17 @@ const jwt = require('jsonwebtoken');
  * Generate JWT Access Token
  * @param {string} id - User ID
  * @param {string} role - User role
+ * @param {string} email - User email (optional)
  * @returns {string} - JWT token
  */
-const generateAccessToken = (id, role) => {
+const generateAccessToken = (id, role, email = null) => {
+  const payload = { id, role };
+  if (email) {
+    payload.email = email;
+  }
+  
   return jwt.sign(
-    { id, role },
+    payload,
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || '1h' }
   );

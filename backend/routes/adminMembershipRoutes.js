@@ -10,64 +10,64 @@ const {
   updateMembershipPlan,
   deleteMembershipPlan,
 } = require('../controllers/adminMembershipController');
-const { protectAdmin, checkPermission } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin } = require('../middleware/roleAuthMiddleware');
 
 // Membership routes
 /**
  * @route   GET /api/admin/memberships/stats
  * @desc    Get membership statistics
- * @access  Private (Admin with canViewReports permission)
+ * @access  Private (Admin)
  */
-router.get('/memberships/stats', protectAdmin, checkPermission('canViewReports'), getMembershipStats);
+router.get('/memberships/stats', protectAdmin, getMembershipStats);
 
 /**
  * @route   GET /api/admin/memberships
  * @desc    Get all memberships with filtering
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.get('/memberships', protectAdmin, checkPermission('canManageUsers'), getAllMemberships);
+router.get('/memberships', protectAdmin, getAllMemberships);
 
 /**
  * @route   POST /api/admin/memberships
  * @desc    Create new membership
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/memberships', protectAdmin, checkPermission('canManageUsers'), createMembership);
+router.post('/memberships', protectAdmin, createMembership);
 
 /**
  * @route   POST /api/admin/memberships/:id/renew
  * @desc    Renew membership
- * @access  Private (Admin with canManageUsers permission)
+ * @access  Private (Admin)
  */
-router.post('/memberships/:id/renew', protectAdmin, checkPermission('canManageUsers'), renewMembership);
+router.post('/memberships/:id/renew', protectAdmin, renewMembership);
 
 // Membership Plan routes
 /**
  * @route   GET /api/admin/membership-plans
  * @desc    Get all membership plans
- * @access  Private (Admin with canManageSettings permission)
+ * @access  Private (Admin)
  */
-router.get('/membership-plans', protectAdmin, checkPermission('canManageSettings'), getAllMembershipPlans);
+router.get('/membership-plans', protectAdmin, getAllMembershipPlans);
 
 /**
  * @route   POST /api/admin/membership-plans
  * @desc    Create membership plan
- * @access  Private (Admin with canManageSettings permission)
+ * @access  Private (Admin)
  */
-router.post('/membership-plans', protectAdmin, checkPermission('canManageSettings'), createMembershipPlan);
+router.post('/membership-plans', protectAdmin, createMembershipPlan);
 
 /**
  * @route   PUT /api/admin/membership-plans/:id
  * @desc    Update membership plan
- * @access  Private (Admin with canManageSettings permission)
+ * @access  Private (Admin)
  */
-router.put('/membership-plans/:id', protectAdmin, checkPermission('canManageSettings'), updateMembershipPlan);
+router.put('/membership-plans/:id', protectAdmin, updateMembershipPlan);
 
 /**
  * @route   DELETE /api/admin/membership-plans/:id
  * @desc    Delete membership plan
- * @access  Private (Admin with canManageSettings and canDeleteRecords permissions)
+ * @access  Private (Admin)
  */
-router.delete('/membership-plans/:id', protectAdmin, checkPermission('canManageSettings'), checkPermission('canDeleteRecords'), deleteMembershipPlan);
+router.delete('/membership-plans/:id', protectAdmin, deleteMembershipPlan);
 
 module.exports = router;

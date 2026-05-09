@@ -49,7 +49,7 @@ const login = asyncHandler(async (req, res) => {
   await trainer.save();
 
   // Generate tokens
-  const accessToken = generateAccessToken(trainer._id, 'trainer');
+  const accessToken = generateAccessToken(trainer._id, 'trainer', trainer.email);
   const refreshToken = generateRefreshToken(trainer._id);
 
   // Get public profile
