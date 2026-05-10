@@ -121,8 +121,8 @@ const createTrainer = asyncHandler(async (req, res) => {
   } = req.body;
 
   // Validate required fields
-  if (!fullName || !email || !password || !phone || !gender || !assignedBranch || !salary) {
-    throw ApiError.badRequest('Please provide all required fields: fullName, email, password, phone, gender, assignedBranch, salary');
+  if (!fullName || !email || !password || !phone || !gender || !salary) {
+    throw ApiError.badRequest('Please provide all required fields: fullName, email, password, phone, gender, salary');
   }
 
   // Check if trainer already exists
@@ -137,10 +137,21 @@ const createTrainer = asyncHandler(async (req, res) => {
     throw ApiError.conflict('Trainer with this phone number already exists');
   }
 
-  // Verify branch exists
-  const branch = await Branch.findById(assignedBranch);
-  if (!branch) {
-    throw ApiError.notFound('Branch not found');
+  // Verify branch exists if provided
+  let validBranchId = assignedBranch;
+  if (assignedBranch) {
+    const branch = await Branch.findById(assignedBranch);
+    if (!branch) {
+      throw ApiError.notFound('Branch not found');
+    }
+  } else {
+    // Get the first branch as default if not provided
+    const defaultBranch = await Branch.findOne();
+    if (defaultBranch) {
+      validBranchId = defaultBranch._id;
+    } else {
+      throw ApiError.badRequest('No branches available. Please create a branch first.');
+    }
   }
 
   // Validate password strength
@@ -163,7 +174,7 @@ const createTrainer = asyncHandler(async (req, res) => {
     specialization: specialization || [],
     certifications: certifications || [],
     experience: experience || 0,
-    assignedBranch,
+    assignedBranch: validBranchId,
     salary: {
       amount: salary.amount,
       currency: salary.currency || 'INR',

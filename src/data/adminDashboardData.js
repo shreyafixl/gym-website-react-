@@ -20,20 +20,6 @@ export const revenueData = [28000,31000,29500,34000,32000,38000,36000,41000,3900
 export const memberGrowthData = [8,12,15,10,18,22,19,25,21,28,23,23];
 
 // ── Members ──────────────────────────────────────────────────
-export const members = [
-  { id:1,  name:"Aryan Mehta",   email:"aryan@email.com",   phone:"9876543210", plan:"Half-Yearly", status:"active",    expiry:"Aug 2025", joined:"Jan 2024", checkins:48,  trainer:"Vikram Singh",  gender:"Male",   age:28 },
-  { id:2,  name:"Priya Sharma",  email:"priya@email.com",   phone:"9876543211", plan:"Monthly",     status:"active",    expiry:"May 2025", joined:"Apr 2025", checkins:12,  trainer:"Anjali Sharma", gender:"Female", age:24 },
-  { id:3,  name:"Rahul Gupta",   email:"rahul@email.com",   phone:"9876543212", plan:"Quarterly",   status:"active",    expiry:"Jun 2025", joined:"Mar 2025", checkins:22,  trainer:"Vikram Singh",  gender:"Male",   age:31 },
-  { id:4,  name:"Neha Joshi",    email:"neha@email.com",    phone:"9876543213", plan:"Annual",      status:"active",    expiry:"Nov 2025", joined:"Nov 2023", checkins:91,  trainer:"Vikram Singh",  gender:"Female", age:26 },
-  { id:5,  name:"Amit Patel",    email:"amit@email.com",    phone:"9876543214", plan:"Monthly",     status:"expired",   expiry:"Apr 2025", joined:"Apr 2025", checkins:5,   trainer:"—",             gender:"Male",   age:35 },
-  { id:6,  name:"Sunita Rao",    email:"sunita@email.com",  phone:"9876543215", plan:"Half-Yearly", status:"active",    expiry:"Jun 2025", joined:"Dec 2023", checkins:67,  trainer:"Anjali Sharma", gender:"Female", age:29 },
-  { id:7,  name:"Karan Mehta",   email:"karan@email.com",   phone:"9876543216", plan:"Quarterly",   status:"suspended", expiry:"May 2025", joined:"Feb 2025", checkins:8,   trainer:"—",             gender:"Male",   age:22 },
-  { id:8,  name:"Deepa Nair",    email:"deepa@email.com",   phone:"9876543217", plan:"Annual",      status:"active",    expiry:"Dec 2025", joined:"Dec 2023", checkins:104, trainer:"Vikram Singh",  gender:"Female", age:33 },
-  { id:9,  name:"Ravi Sharma",   email:"ravi@email.com",    phone:"9876543218", plan:"Monthly",     status:"active",    expiry:"May 2025", joined:"May 2025", checkins:3,   trainer:"—",             gender:"Male",   age:27 },
-  { id:10, name:"Divya Singh",   email:"divya@email.com",   phone:"9876543219", plan:"Annual",      status:"active",    expiry:"Mar 2026", joined:"Mar 2025", checkins:31,  trainer:"Anjali Sharma", gender:"Female", age:30 },
-  { id:11, name:"Vikash Nair",   email:"vikash@email.com",  phone:"9876543220", plan:"Quarterly",   status:"active",    expiry:"Jul 2025", joined:"Apr 2025", checkins:18,  trainer:"Suresh Iyer",   gender:"Male",   age:25 },
-  { id:12, name:"Pooja Reddy",   email:"pooja@email.com",   phone:"9876543221", plan:"Monthly",     status:"inactive",  expiry:"Mar 2025", joined:"Feb 2025", checkins:2,   trainer:"—",             gender:"Female", age:23 },
-];
 
 // ── Attendance Logs ──────────────────────────────────────────
 export const attendanceLogs = [
@@ -47,15 +33,6 @@ export const attendanceLogs = [
   { id:8,  member:"Divya Singh",  date:"May 5, 2026",  checkIn:"8:00 AM",  checkOut:"9:00 AM",  duration:"1h 00m", class:"Zumba Dance"       },
   { id:9,  member:"Aryan Mehta",  date:"May 4, 2026",  checkIn:"6:05 AM",  checkOut:"7:50 AM",  duration:"1h 45m", class:"HIIT Blast"        },
   { id:10, member:"Ravi Sharma",  date:"May 4, 2026",  checkIn:"7:00 PM",  checkOut:"8:30 PM",  duration:"1h 30m", class:"Zumba Dance"       },
-];
-
-// ── Trainers / Staff ─────────────────────────────────────────
-export const trainers = [
-  { id:1, name:"Vikram Singh",  role:"Senior Trainer",    specialization:"Bodybuilding & CrossFit", clients:8,  sessions:62, rating:4.9, status:"active",   joined:"Jan 2022", avatar:"VS", permissions:{ members:true,  billing:true,  reports:true  } },
-  { id:2, name:"Anjali Sharma", role:"Fitness Trainer",   specialization:"Yoga & Pilates",          clients:6,  sessions:48, rating:4.7, status:"active",   joined:"Mar 2022", avatar:"AS", permissions:{ members:true,  billing:false, reports:false } },
-  { id:3, name:"Suresh Iyer",   role:"Cardio Specialist", specialization:"HIIT & Cardio",           clients:5,  sessions:40, rating:4.6, status:"active",   joined:"Jun 2022", avatar:"SI", permissions:{ members:true,  billing:false, reports:false } },
-  { id:4, name:"Meena Patel",   role:"Reception",         specialization:"Front Desk",              clients:0,  sessions:0,  rating:4.8, status:"active",   joined:"Aug 2022", avatar:"MP", permissions:{ members:true,  billing:true,  reports:false } },
-  { id:5, name:"Rohit Das",     role:"Trainer",           specialization:"Strength & Conditioning", clients:4,  sessions:31, rating:4.5, status:"on_leave", joined:"Nov 2022", avatar:"RD", permissions:{ members:false, billing:false, reports:false } },
 ];
 
 // ── Classes ──────────────────────────────────────────────────

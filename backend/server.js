@@ -17,7 +17,7 @@ connectDB();
 // Security Middleware
 app.use(helmet()); // Set security headers
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(o => o.trim()),
   credentials: true,
 }));
 

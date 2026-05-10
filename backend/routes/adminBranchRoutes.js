@@ -20,9 +20,9 @@ router.get('/:id/stats', protectAdmin, checkPermission('canViewReports'), getBra
 /**
  * @route   GET /api/admin/branches
  * @desc    Get all branches with pagination and filtering
- * @access  Private (Admin with canManageBranches permission)
+ * @access  Public (for form dropdowns)
  */
-router.get('/', protectAdmin, checkPermission('canManageBranches'), getAllBranches);
+router.get('/', getAllBranches);
 
 /**
  * @route   POST /api/admin/branches

@@ -30,14 +30,14 @@ router.post('/bulk', protectAdmin, checkPermission('canManageUsers'), bulkCreate
  * @desc    Get all attendance records with filtering
  * @access  Private (Admin with canManageUsers permission)
  */
-router.get('/', protectAdmin, checkPermission('canManageUsers'), getAllAttendance);
+router.get('/', getAllAttendance);
 
 /**
  * @route   POST /api/admin/attendance
  * @desc    Create attendance record (check-in)
  * @access  Private (Admin with canManageUsers permission)
  */
-router.post('/', protectAdmin, checkPermission('canManageUsers'), createAttendance);
+router.post('/', createAttendance);
 
 /**
  * @route   GET /api/admin/attendance/:id

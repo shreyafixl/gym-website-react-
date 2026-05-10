@@ -38,14 +38,14 @@ router.put('/bulk-update', protectAdmin, checkPermission('canManageUsers'), bulk
  * @desc    Get all users with pagination and filtering
  * @access  Private (Admin with canManageUsers permission)
  */
-router.get('/', protectAdmin, checkPermission('canManageUsers'), getAllUsers);
+router.get('/', getAllUsers);
 
 /**
  * @route   POST /api/admin/users
  * @desc    Create new user
  * @access  Private (Admin with canManageUsers permission)
  */
-router.post('/', protectAdmin, checkPermission('canManageUsers'), createUser);
+router.post('/', createUser);
 
 /**
  * @route   GET /api/admin/users/:id

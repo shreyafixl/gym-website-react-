@@ -45,6 +45,7 @@ function StatPill({ icon, label, value, color }) {
 
 // ─── STAR RATING ──────────────────────────────────────────────────────────────
 function StarRating({ rating }) {
+  const ratingValue = typeof rating === 'object' ? (rating?.average || 4.5) : (rating || 4.5);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
       {[1, 2, 3, 4, 5].map(i => (
@@ -52,12 +53,12 @@ function StarRating({ rating }) {
           key={i}
           style={{
             fontSize: ".85rem",
-            color: i <= Math.round(rating) ? "#fbbf24" : "var(--border-color)",
+            color: i <= Math.round(ratingValue) ? "#fbbf24" : "var(--border-color)",
           }}
         />
       ))}
       <span style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text-primary)", marginLeft: 4 }}>
-        {rating}
+        {ratingValue}
       </span>
     </div>
   );
@@ -324,9 +325,9 @@ export default function TrainerProfileSidebar({ trainer, members = [], onClose, 
 
               {/* Stats row */}
               <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-                <StatPill icon={<FaUsers />}       label="Clients"  value={trainer.clients}  color="#3b82f6" />
-                <StatPill icon={<FaCalendarAlt />} label="Sessions" value={trainer.sessions} color="#22c55e" />
-                <StatPill icon={<FaStar />}        label="Rating"   value={trainer.rating}   color="#fbbf24" />
+                <StatPill icon={<FaUsers />}       label="Clients"  value={trainer.clients || 0}  color="#3b82f6" />
+                <StatPill icon={<FaCalendarAlt />} label="Sessions" value={trainer.sessions || 0} color="#22c55e" />
+                <StatPill icon={<FaStar />}        label="Rating"   value={typeof trainer.rating === 'object' ? (trainer.rating?.average || 4.5) : (trainer.rating || 4.5)} color="#fbbf24" />
                 <StatPill icon={<FaDumbbell />}    label="Revenue"  value={revenue}          color="var(--accent)" />
               </div>
 
@@ -338,9 +339,9 @@ export default function TrainerProfileSidebar({ trainer, members = [], onClose, 
                 marginBottom: 16,
               }}>
                 {[
-                  { icon: <FaUserCog />,    label: "Specialization", value: trainer.specialization, color: "#8b5cf6" },
-                  { icon: <FaAward />,      label: "Joined",         value: trainer.joined,         color: "#f59e0b" },
-                  { icon: <FaCheckCircle />,label: "Status",         value: trainer.status?.replace("_", " "), color: "#22c55e" },
+                  { icon: <FaUserCog />,    label: "Specialization", value: trainer.specialization || "—", color: "#8b5cf6" },
+                  { icon: <FaAward />,      label: "Joined",         value: trainer.joined || "—",         color: "#f59e0b" },
+                  { icon: <FaCheckCircle />,label: "Status",         value: (trainer.status || "active")?.replace("_", " "), color: "#22c55e" },
                   ...(trainer.email ? [{ icon: <FaEnvelope />, label: "Email", value: trainer.email, color: "#06b6d4" }] : []),
                   ...(trainer.phone ? [{ icon: <FaPhone />,   label: "Phone", value: trainer.phone, color: "#10b981" }] : []),
                   ...(trainer.certification ? [{ icon: <FaAward />, label: "Certification", value: trainer.certification, color: "#f97316" }] : []),
@@ -366,7 +367,7 @@ export default function TrainerProfileSidebar({ trainer, members = [], onClose, 
                         {label}
                       </div>
                       <div style={{ fontSize: ".88rem", color: "var(--text-primary)", fontWeight: 500, textTransform: label === "Status" ? "capitalize" : "none" }}>
-                        {value || "—"}
+                        {typeof value === 'string' ? value : (value || "—")}
                       </div>
                     </div>
                   </div>

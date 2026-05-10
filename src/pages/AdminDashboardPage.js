@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FaTachometerAlt, FaUsers, FaCalendarAlt, FaClipboardList, FaChartBar,
@@ -10,9 +10,9 @@ import {
 } from "react-icons/fa";
 import {
   adminInfo, kpiData, revenueData, memberGrowthData,
-  members, trainers, classes, enquiries, equipmentLog,
-  pendingPayments, dueRenewals, attendanceData, popularClasses,
-  attendanceLogs, classBookings, notificationsData, coupons,
+  classes, enquiries, equipmentLog,
+  pendingPayments, dueRenewals, popularClasses,
+  classBookings, notificationsData, coupons,
   discounts, weeklySchedule, completedPayments, maintenanceLogs,
 } from "../data/adminDashboardData";
 import FormModal from "../components/FormModal";
@@ -20,6 +20,7 @@ import { FormRenderer, formTitles } from "../components/DynamicForms";
 import { useFormModal } from "../hooks/useFormModal";
 import DashboardThemeSwitcher, { useDashboardTheme } from "../components/DashboardThemeSwitcher";
 import TrainerProfileSidebar from "../components/TrainerProfileSidebar";
+import useAdminDashboard from "../hooks/useAdminDashboard";
 import "../admin-dashboard.css";
 
 // ─── NAV GROUPS ───────────────────────────────────────────────────────────────
@@ -246,11 +247,98 @@ function Pagination({ total, page, perPage, onChange }) {
 // ─── OVERVIEW ─────────────────────────────────────────────────────────────────
 function AdminOverview() {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const {
+    attendance: backendAttendance,
+    fetchAttendance,
+    members: backendMembers,
+    fetchMembers,
+    trainers: backendTrainers,
+    fetchTrainers,
+    dashboardData,
+    dashboardLoading,
+    fetchDashboardOverview,
+  } = useAdminDashboard();
+
+  const [kpiValues, setKpiValues] = useState({
+    totalMembers: 0,
+    activeMembers: 0,
+    todayCheckins: 0,
+    monthlyRevenue: 0,
+    occupancyRate: 0,
+    newMembers: 0,
+  });
+
+  // Fetch all data on component mount
+  useEffect(() => {
+    // Fetch members, attendance, and trainers (these are essential)
+    fetchMembers(1, 100);
+    fetchAttendance(1, 100);
+    fetchTrainers(1, 100);
+    
+    // Try to fetch dashboard overview, but don't fail if it errors
+    fetchDashboardOverview().catch(err => {
+      console.warn('Dashboard overview not available, using calculated values:', err.message);
+    });
+  }, [fetchDashboardOverview, fetchMembers, fetchAttendance, fetchTrainers]);
+
+  // Update KPI values when data arrives
+  useEffect(() => {
+    if (dashboardData?.data) {
+      const data = dashboardData.data;
+      setKpiValues({
+        totalMembers: data.totalMembers || 0,
+        activeMembers: data.activeMembers || 0,
+        todayCheckins: data.todayAttendance || 0,
+        monthlyRevenue: data.revenue?.totalRevenue || 0,
+        occupancyRate: data.occupancyRate || 0,
+        newMembers: data.newMembers || 0,
+      });
+    } else {
+      // Calculate from fetched data if dashboard endpoint not available
+      setKpiValues(prev => ({
+        ...prev,
+        totalMembers: backendMembers.length,
+        activeMembers: backendMembers.filter(m => m.membershipStatus === 'active').length,
+        todayCheckins: backendAttendance.filter(a => {
+          const today = new Date().toLocaleDateString();
+          const attendanceDate = a.attendanceDate ? new Date(a.attendanceDate).toLocaleDateString() : "";
+          return attendanceDate === today;
+        }).length,
+        newMembers: backendMembers.filter(m => {
+          const createdDate = new Date(m.createdAt);
+          const monthAgo = new Date();
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return createdDate >= monthAgo;
+        }).length,
+      }));
+    }
+  }, [dashboardData, backendMembers, backendAttendance]);
+
+  // Calculate weekly attendance from backend data
+  const weeklyAttendance = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((day, dayIndex) => {
+    const count = backendAttendance.filter(a => {
+      const date = new Date(a.attendanceDate);
+      return date.getDay() === (dayIndex + 1) % 7;
+    }).length;
+    return count;
+  });
+
+  // Dynamic KPI data
+  const dynamicKpiData = [
+    { icon:"👥", label:"Total Members",   value: kpiValues.totalMembers,      change:"+23 this month",      color:"#e8622a" },
+    { icon:"✅", label:"Active Members",  value: kpiValues.activeMembers,      change:`${Math.round((kpiValues.activeMembers / Math.max(kpiValues.totalMembers, 1)) * 100)}% active rate`,     color:"#22c55e" },
+    { icon:"🏃", label:"Today Check-ins", value: kpiValues.todayCheckins,       change:"+12 vs yesterday",    color:"#3b82f6" },
+    { icon:"💰", label:"Monthly Revenue", value: `$${(kpiValues.monthlyRevenue / 1000).toFixed(1)}k`, change:"+8.4% vs last month", color:"#8b5cf6" },
+    { icon:"📊", label:"Occupancy Rate",  value: `${kpiValues.occupancyRate || 73}%`,     change:"Peak: 6–8 PM",        color:"#f59e0b" },
+    { icon:"🆕", label:"New Members",     value: kpiValues.newMembers,        change:"This month",          color:"#ec4899" },
+  ];
+
   return (
     <div className="ad-section">
       <div className="ad-section-head"><h2>📊 Overview</h2></div>
+      {dashboardLoading && <div style={{ padding: "12px", background: "#e0f2fe", color: "#0369a1", borderRadius: "6px", marginBottom: "12px" }}>Loading dashboard data...</div>}
       <div className="ad-kpi-grid">
-        {kpiData.map((k, i) => (
+        {dynamicKpiData.map((k, i) => (
           <KpiCard key={i} icon={k.icon} label={k.label} value={k.value} change={k.change} color={k.color} />
         ))}
       </div>
@@ -267,7 +355,7 @@ function AdminOverview() {
       <div className="ad-two-col">
         <div className="ad-card">
           <div className="ad-card-head"><h3>🏃 Weekly Attendance</h3></div>
-          <BarChart data={attendanceData.map(d=>d.checkins)} labels={attendanceData.map(d=>d.day)} color="#3b82f6" height={110} />
+          <BarChart data={weeklyAttendance} labels={["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]} color="#3b82f6" height={110} />
         </div>
         <div className="ad-card">
           <div className="ad-card-head"><h3>🔥 Class Occupancy Heatmap</h3></div>
@@ -314,34 +402,94 @@ function AdminOverview() {
 
 // ─── MEMBERS: ALL MEMBERS ─────────────────────────────────────────────────────
 function AdminAllMembers({ openForm }) {
-  const [list, setList]       = useState(members);
+  const {
+    members: backendMembers,
+    membersLoading,
+    membersError,
+    membersPagination,
+    fetchMembers,
+    createMember,
+    updateMember,
+    deleteMember,
+  } = useAdminDashboard();
+
   const [search, setSearch]   = useState("");
   const [planF, setPlanF]     = useState("all");
   const [statusF, setStatusF] = useState("all");
   const [page, setPage]       = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [viewMember, setViewMember] = useState(null);
-  const [newMember, setNewMember]   = useState({ name:"", email:"", phone:"", plan:"Monthly" });
+  const [newMember, setNewMember]   = useState({ fullName:"", email:"", phone:"", password:"", gender:"male", age:25, membershipPlan:"monthly" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, show } = useToast();
   const PER = 6;
 
-  const filtered = list.filter(m =>
+  // Fetch members on component mount
+  useEffect(() => {
+    fetchMembers(1, 10);
+  }, [fetchMembers]);
+
+  // Map backend data to display format
+  const displayMembers = backendMembers.map(m => ({
+    _id: m._id,
+    id: m._id,
+    name: m.fullName,
+    email: m.email,
+    phone: m.phone || "—",
+    plan: m.membershipPlan || "—",
+    status: m.membershipStatus || "active",
+    expiry: m.membershipExpiry ? new Date(m.membershipExpiry).toLocaleDateString() : "—",
+    joined: m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "—",
+    checkins: m.checkins || 0,
+    trainer: m.assignedTrainer?.fullName || "—",
+    gender: m.gender || "—",
+    age: m.age || 0,
+  }));
+
+  const filtered = displayMembers.filter(m =>
     (statusF === "all" || m.status === statusF) &&
     (planF   === "all" || m.plan   === planF) &&
     (m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase()))
   );
   const paged = filtered.slice((page-1)*PER, page*PER);
 
-  const toggleStatus = (id) => {
-    setList(prev => prev.map(m => m.id === id ? { ...m, status: m.status === "active" ? "suspended" : "active" } : m));
-    show("Member status updated!");
+  const toggleStatus = async (memberId) => {
+    try {
+      const member = displayMembers.find(m => m._id === memberId);
+      const newStatus = member.status === "active" ? "suspended" : "active";
+      await updateMember(memberId, { membershipStatus: newStatus });
+      show(`Member ${newStatus === "active" ? "activated" : "suspended"}!`);
+    } catch (error) {
+      show(`Error: ${error.message || "Failed to update member"}`);
+    }
   };
-  const addMember = () => {
-    if (!newMember.name || !newMember.email) return;
-    setList(prev => [...prev, { ...newMember, id:Date.now(), status:"active", expiry:"—", joined:"May 2026", checkins:0, trainer:"—", gender:"—", age:0 }]);
-    setNewMember({ name:"", email:"", phone:"", plan:"Monthly" });
-    setShowAdd(false);
-    show("Member added successfully!");
+
+  const addMember = async () => {
+    if (!newMember.fullName || !newMember.email || !newMember.password || !newMember.phone || !newMember.gender || !newMember.age) {
+      show("Please fill in all required fields");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await createMember({
+        fullName: newMember.fullName,
+        email: newMember.email,
+        phone: newMember.phone,
+        password: newMember.password,
+        gender: newMember.gender,
+        age: parseInt(newMember.age),
+        membershipPlan: newMember.membershipPlan,
+        role: "member",
+      });
+      setNewMember({ fullName:"", email:"", phone:"", password:"", gender:"male", age:25, membershipPlan:"monthly" });
+      setShowAdd(false);
+      show("Member added successfully!");
+      fetchMembers(1, 10);
+    } catch (error) {
+      show(`Error: ${error.message || "Failed to add member"}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -350,7 +498,7 @@ function AdminAllMembers({ openForm }) {
       <div className="ad-section-head">
         <h2>👥 All Members</h2>
         <div className="ad-head-actions">
-          <button className="btn btn-primary ad-btn-sm" onClick={() => openForm("addMember")}>+ Add Member</button>
+          <button className="btn btn-primary ad-btn-sm" onClick={() => setShowAdd(true)} disabled={isSubmitting}>+ Add Member</button>
           <button className="btn btn-outline ad-btn-sm" onClick={() => show("Exporting CSV...")}>⬇ Export CSV</button>
         </div>
       </div>
@@ -370,14 +518,23 @@ function AdminAllMembers({ openForm }) {
         </div>
       </div>
       <div className="ad-card">
-        <div className="ad-card-head"><h3>Showing {filtered.length} of {list.length} members</h3></div>
-        {paged.length === 0 ? <EmptyState title="No members found" desc="Try adjusting your search or filters." /> : (
+        <div className="ad-card-head">
+          <h3>
+            {membersLoading ? "Loading members..." : `Showing ${filtered.length} of ${displayMembers.length} members`}
+          </h3>
+        </div>
+        {membersError && <div style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "6px", marginBottom: "12px" }}>Error: {membersError}</div>}
+        {membersLoading ? (
+          <EmptyState icon="⏳" title="Loading members..." desc="Please wait while we fetch your data." />
+        ) : paged.length === 0 ? (
+          <EmptyState title="No members found" desc="Try adjusting your search or filters." />
+        ) : (
           <div className="ad-table-wrap">
             <table className="ad-table">
               <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Status</th><th>Expiry</th><th>Check-ins</th><th>Trainer</th><th>Actions</th></tr></thead>
               <tbody>
                 {paged.map(m => (
-                  <tr key={m.id}>
+                  <tr key={m._id}>
                     <td><strong>{m.name}</strong></td>
                     <td style={{ fontSize:".8rem" }}>{m.email}</td>
                     <td>{m.plan}</td>
@@ -388,7 +545,7 @@ function AdminAllMembers({ openForm }) {
                     <td>
                       <div style={{ display:"flex", gap:6 }}>
                         <button className="ad-link-btn" onClick={() => setViewMember(m)}>View</button>
-                        <button className="ad-link-btn" style={{ color: m.status==="active"?"#ef4444":"#22c55e" }} onClick={() => toggleStatus(m.id)}>
+                        <button className="ad-link-btn" style={{ color: m.status==="active"?"#ef4444":"#22c55e" }} onClick={() => toggleStatus(m._id)}>
                           {m.status==="active"?"Suspend":"Activate"}
                         </button>
                       </div>
@@ -404,19 +561,32 @@ function AdminAllMembers({ openForm }) {
 
       {showAdd && (
         <AdModal title="Add New Member" onClose={() => setShowAdd(false)}>
-          {[["Full Name","name","text"],["Email","email","email"],["Phone","phone","tel"]].map(([label,key,type]) => (
+          {[["Full Name","fullName","text"],["Email","email","email"],["Phone","phone","tel"],["Password","password","password"],["Age","age","number"]].map(([label,key,type]) => (
             <div className="ad-form-group" key={key}>
               <label>{label}</label>
-              <input className="ad-input" type={type} placeholder={label} value={newMember[key]} onChange={e => setNewMember(p => ({ ...p, [key]:e.target.value }))} />
+              <input className="ad-input" type={type} placeholder={label} value={newMember[key]} onChange={e => setNewMember(p => ({ ...p, [key]:e.target.value }))} disabled={isSubmitting} />
             </div>
           ))}
           <div className="ad-form-group">
-            <label>Membership Plan</label>
-            <select className="ad-input" value={newMember.plan} onChange={e => setNewMember(p => ({ ...p, plan:e.target.value }))}>
-              {["Monthly","Quarterly","Half-Yearly","Annual"].map(p => <option key={p}>{p}</option>)}
+            <label>Gender</label>
+            <select className="ad-input" value={newMember.gender} onChange={e => setNewMember(p => ({ ...p, gender:e.target.value }))} disabled={isSubmitting}>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
             </select>
           </div>
-          <button className="btn btn-primary" style={{ width:"100%", marginTop:8 }} onClick={addMember}>Add Member</button>
+          <div className="ad-form-group">
+            <label>Membership Plan</label>
+            <select className="ad-input" value={newMember.membershipPlan} onChange={e => setNewMember(p => ({ ...p, membershipPlan:e.target.value }))} disabled={isSubmitting}>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="half-yearly">Half-Yearly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <button className="btn btn-primary" style={{ width:"100%", marginTop:8 }} onClick={addMember} disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Member"}
+          </button>
         </AdModal>
       )}
 
@@ -442,10 +612,43 @@ function AdminAllMembers({ openForm }) {
 
 // ─── MEMBERS: ATTENDANCE ──────────────────────────────────────────────────────
 function AdminAttendance() {
+  const {
+    attendance: backendAttendance,
+    attendanceLoading,
+    attendanceError,
+    attendancePagination,
+    fetchAttendance,
+    createAttendance,
+    updateAttendance,
+    deleteAttendance,
+  } = useAdminDashboard();
+
   const [search, setSearch] = useState("");
   const [page, setPage]     = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const PER = 6;
-  const filtered = attendanceLogs.filter(a => a.member.toLowerCase().includes(search.toLowerCase()));
+
+  // Fetch attendance on component mount
+  useEffect(() => {
+    fetchAttendance(1, 10);
+  }, [fetchAttendance]);
+
+  // Map backend data to display format
+  const displayAttendance = backendAttendance.map(a => ({
+    _id: a._id,
+    id: a._id,
+    member: a.memberId?.fullName || "Unknown",
+    date: a.attendanceDate ? new Date(a.attendanceDate).toLocaleDateString() : "—",
+    checkIn: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString() : "—",
+    checkOut: a.checkOutTime ? new Date(a.checkOutTime).toLocaleTimeString() : "—",
+    duration: a.checkOutTime && a.checkInTime 
+      ? `${Math.round((new Date(a.checkOutTime) - new Date(a.checkInTime)) / 60000)}m`
+      : "—",
+    class: a.trainerId?.fullName || "—",
+    status: a.attendanceStatus || "present",
+  }));
+
+  const filtered = displayAttendance.filter(a => a.member.toLowerCase().includes(search.toLowerCase()));
   const paged = filtered.slice((page-1)*PER, page*PER);
   const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
@@ -453,15 +656,20 @@ function AdminAttendance() {
     <div className="ad-section">
       <div className="ad-section-head"><h2>📅 Attendance</h2></div>
       <div className="ad-kpi-grid" style={{ gridTemplateColumns:"repeat(3,1fr)" }}>
-        <KpiCard icon="🏃" label="Today Check-ins" value="142" change="+12 vs yesterday" color="#3b82f6" />
-        <KpiCard icon="📅" label="This Week" value="1,015" change="Avg 145/day" color="#22c55e" />
-        <KpiCard icon="📊" label="This Month" value="4,280" change="Avg 142/day" color="var(--accent)" />
+        <KpiCard icon="🏃" label="Today Check-ins" value={displayAttendance.filter(a => a.date === new Date().toLocaleDateString()).length} change="+12 vs yesterday" color="#3b82f6" />
+        <KpiCard icon="📅" label="This Week" value={displayAttendance.length} change={`Avg ${Math.round(displayAttendance.length / 7)}/day`} color="#22c55e" />
+        <KpiCard icon="📊" label="This Month" value={displayAttendance.length} change={`Avg ${Math.round(displayAttendance.length / 30)}/day`} color="var(--accent)" />
       </div>
       <div className="ad-card">
         <div className="ad-card-head"><h3>📆 Weekly Calendar View</h3></div>
         <div className="ad-week-grid">
           {days.map(day => {
-            const count = attendanceData.find(d => d.day === day)?.checkins || 0;
+            // Calculate check-ins for each day from backend data
+            const dayIndex = days.indexOf(day);
+            const count = displayAttendance.filter(a => {
+              const date = new Date(a.date);
+              return date.getDay() === (dayIndex + 1) % 7;
+            }).length;
             return (
               <div key={day} className="ad-week-day">
                 <div className="ad-week-day-label">{day}</div>
@@ -480,13 +688,18 @@ function AdminAttendance() {
         <div className="ad-filters" style={{ marginBottom:12 }}>
           <input className="ad-input" placeholder="🔍 Search member…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} style={{ maxWidth:220 }} />
         </div>
-        {paged.length === 0 ? <EmptyState title="No records found" /> : (
+        {attendanceError && <div style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "6px", marginBottom: "12px" }}>Error: {attendanceError}</div>}
+        {attendanceLoading ? (
+          <EmptyState icon="⏳" title="Loading attendance..." desc="Please wait while we fetch your data." />
+        ) : paged.length === 0 ? (
+          <EmptyState title="No records found" />
+        ) : (
           <div className="ad-table-wrap">
             <table className="ad-table">
               <thead><tr><th>Member</th><th>Date</th><th>Check-in</th><th>Check-out</th><th>Duration</th><th>Class</th></tr></thead>
               <tbody>
                 {paged.map(a => (
-                  <tr key={a.id}>
+                  <tr key={a._id}>
                     <td><strong>{a.member}</strong></td>
                     <td style={{ fontSize:".8rem" }}>{a.date}</td>
                     <td style={{ color:"#22c55e", fontWeight:700 }}>{a.checkIn}</td>
@@ -507,17 +720,45 @@ function AdminAttendance() {
 
 // ─── MEMBERS: CHECK-INS ───────────────────────────────────────────────────────
 function AdminCheckins() {
-  const recent = attendanceLogs.filter(a => a.date === "May 6, 2026");
+  const {
+    attendance: backendAttendance,
+    attendanceLoading,
+    fetchAttendance,
+  } = useAdminDashboard();
+
+  // Fetch attendance on component mount
+  useEffect(() => {
+    fetchAttendance(1, 10);
+  }, [fetchAttendance]);
+
+  // Get today's check-ins from backend data
+  const today = new Date().toLocaleDateString();
+  const recent = backendAttendance.filter(a => {
+    const attendanceDate = a.attendanceDate ? new Date(a.attendanceDate).toLocaleDateString() : "";
+    return attendanceDate === today;
+  });
+
+  // Map backend data to display format
+  const displayRecent = recent.map(a => ({
+    id: a._id,
+    member: a.memberId?.fullName || "Unknown",
+    class: a.trainerId?.fullName || "—",
+    checkIn: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString() : "—",
+    duration: a.checkOutTime && a.checkInTime 
+      ? `${Math.round((new Date(a.checkOutTime) - new Date(a.checkInTime)) / 60000)}m`
+      : "—",
+  }));
+
   return (
     <div className="ad-section">
       <div className="ad-section-head">
         <h2>✅ Check-ins</h2>
-        <span className="ad-badge ad-green">{recent.length} today</span>
+        <span className="ad-badge ad-green">{displayRecent.length} today</span>
       </div>
       <div className="ad-kpi-grid" style={{ gridTemplateColumns:"repeat(3,1fr)" }}>
-        <KpiCard icon="✅" label="Today Check-ins" value={recent.length} color="#22c55e" />
+        <KpiCard icon="✅" label="Today Check-ins" value={displayRecent.length} color="#22c55e" />
         <KpiCard icon="⏰" label="Peak Hour" value="6–8 AM" change="Most active" color="var(--accent)" />
-        <KpiCard icon="📊" label="Avg Duration" value="1h 22m" change="Per session" color="#3b82f6" />
+        <KpiCard icon="📊" label="Avg Duration" value={displayRecent.length > 0 ? `${Math.round(displayRecent.reduce((sum, a) => sum + parseInt(a.duration), 0) / displayRecent.length)}m` : "—"} change="Per session" color="#3b82f6" />
       </div>
       <div className="ad-card">
         <div className="ad-card-head"><h3>🔴 Live Check-in Feed</h3>
@@ -526,19 +767,25 @@ function AdminCheckins() {
             <span style={{ fontSize:".75rem", color:"#22c55e", fontWeight:700 }}>LIVE</span>
           </div>
         </div>
-        {recent.map(a => (
-          <div key={a.id} className="ad-checkin-row">
-            <div className="ad-avatar" style={{ width:36, height:36, fontSize:".7rem" }}>{a.member.split(" ").map(n=>n[0]).join("")}</div>
-            <div style={{ flex:1 }}>
-              <strong style={{ fontSize:".88rem" }}>{a.member}</strong>
-              <div style={{ fontSize:".75rem", color:"var(--text-secondary)" }}>{a.class}</div>
+        {attendanceLoading ? (
+          <EmptyState icon="⏳" title="Loading check-ins..." desc="Please wait while we fetch your data." />
+        ) : displayRecent.length === 0 ? (
+          <EmptyState title="No check-ins today" />
+        ) : (
+          displayRecent.map(a => (
+            <div key={a.id} className="ad-checkin-row">
+              <div className="ad-avatar" style={{ width:36, height:36, fontSize:".7rem" }}>{a.member.split(" ").map(n=>n[0]).join("")}</div>
+              <div style={{ flex:1 }}>
+                <strong style={{ fontSize:".88rem" }}>{a.member}</strong>
+                <div style={{ fontSize:".75rem", color:"var(--text-secondary)" }}>{a.class}</div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:".82rem", color:"#22c55e", fontWeight:700 }}>{a.checkIn}</div>
+                <div style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{a.duration}</div>
+              </div>
             </div>
-            <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:".82rem", color:"#22c55e", fontWeight:700 }}>{a.checkIn}</div>
-              <div style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{a.duration}</div>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
@@ -546,82 +793,180 @@ function AdminCheckins() {
 
 // ─── STAFF: TRAINERS ──────────────────────────────────────────────────────────
 function AdminTrainers({ openForm }) {
-  const [trainerList, setTrainerList] = useState(trainers);
+  const {
+    trainers: backendTrainers,
+    trainersLoading,
+    trainersError,
+    trainersPagination,
+    fetchTrainers,
+    createTrainer,
+    updateTrainer,
+    deleteTrainer,
+  } = useAdminDashboard();
+
   const [assignModal, setAssignModal] = useState(null);
   const [profileTrainer, setProfileTrainer] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAddTrainer, setShowAddTrainer] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [editingTrainer, setEditingTrainer] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [newTrainer, setNewTrainer] = useState({ fullName:"", email:"", phone:"", password:"", specialization:"", gender:"male", salary:"", assignedBranch:"", role:"trainer" });
   const { toast, show } = useToast();
 
-  // Enrich trainer data with contact info for the sidebar
-  const enriched = trainerList.map(t => ({
-    ...t,
-    email: `${t.name.toLowerCase().replace(/ /g, ".")}@fitzone.com`,
-    phone: `+91 98765 ${String(t.id).padStart(2, "0")}000`,
-    bio: t.specialization
-      ? `${t.name} is a ${t.role} specializing in ${t.specialization}. With ${t.sessions} sessions completed and a ${t.rating}⭐ rating, they are one of our top-performing staff members.`
-      : undefined,
+  // Fetch trainers on component mount
+  useEffect(() => {
+    fetchTrainers(1, 10);
+    fetchBranches();
+  }, [fetchTrainers]);
+
+  // Fetch branches for dropdown
+  const fetchBranches = async () => {
+    setBranchesLoading(true);
+    try {
+      const response = await fetch('http://localhost:5001/api/admin/branches', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      const data = await response.json();
+      if (data.success && data.data?.branches) {
+        setBranches(data.data.branches);
+      } else if (data.data && Array.isArray(data.data)) {
+        setBranches(data.data);
+      } else {
+        console.warn('No branches found in response:', data);
+        setBranches([]);
+      }
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      setBranches([]);
+    } finally {
+      setBranchesLoading(false);
+    }
+  };
+
+  // Map backend data to display format
+  const displayTrainers = (backendTrainers || []).map(t => ({
+    _id: t._id,
+    id: t._id,
+    name: t.fullName || "Unknown",
+    email: t.email || "—",
+    phone: t.phone || "—",
+    role: t.role || "Trainer",
+    specialization: t.specialization?.join(", ") || "—",
+    status: t.trainerStatus || "active",
+    clients: t.assignedMembers?.length || 0,
+    sessions: t.sessionsCompleted || 0,
+    rating: t.rating || 4.5,
+    avatar: (t.fullName || "T").charAt(0).toUpperCase(),
+    permissions: { members: true, billing: true, reports: true },
+    bio: `${t.fullName || "Trainer"} is a ${t.role || "Trainer"} specializing in ${t.specialization?.join(", ") || "fitness"}. With ${t.sessionsCompleted || 0} sessions completed and a ${t.rating || 4.5}⭐ rating.`,
   }));
+
+  const addTrainer = async () => {
+    if (!newTrainer.fullName || !newTrainer.email || !newTrainer.password || !newTrainer.phone || !newTrainer.gender || !newTrainer.salary) {
+      show("Please fill in all required fields: Full Name, Email, Phone, Password, Gender, Salary");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await createTrainer({
+        fullName: newTrainer.fullName,
+        email: newTrainer.email,
+        phone: newTrainer.phone,
+        password: newTrainer.password,
+        gender: newTrainer.gender,
+        salary: {
+          amount: parseFloat(newTrainer.salary),
+          currency: 'INR',
+          paymentFrequency: 'monthly'
+        },
+        assignedBranch: newTrainer.assignedBranch || null,
+        specialization: newTrainer.specialization ? [newTrainer.specialization] : ["General Fitness"],
+        role: "trainer",
+      });
+      setNewTrainer({ fullName:"", email:"", phone:"", password:"", specialization:"", gender:"male", salary:"", assignedBranch:"", role:"trainer" });
+      setShowAddTrainer(false);
+      show("Trainer added successfully!");
+      fetchTrainers(1, 10);
+    } catch (error) {
+      show(`Error: ${error.message || "Failed to add trainer"}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="ad-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="ad-section-head">
         <h2>🏋️ Trainers</h2>
-        <button className="btn btn-primary ad-btn-sm" onClick={() => openForm("addStaff")}>+ Add Staff</button>
+        <button className="btn btn-primary ad-btn-sm" onClick={() => setShowAddTrainer(true)} disabled={isSubmitting}>+ Add Staff</button>
       </div>
-      <div className="ad-staff-grid">
-        {enriched.map(t => (
-          <div className="ad-card ad-staff-card" key={t.id}>
-            <div className="ad-staff-header">
-              <div className="ad-avatar" style={{ width:46, height:46, fontSize:".85rem" }}>{t.avatar}</div>
-              <div>
-                <strong>{t.name}</strong>
-                <span style={{ fontSize:".75rem", color:"var(--text-secondary)", display:"block" }}>{t.role}</span>
-                <ABadge s={t.status} />
+      {trainersError && <div style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "6px", marginBottom: "12px" }}>Error: {trainersError}</div>}
+      {trainersLoading ? (
+        <EmptyState icon="⏳" title="Loading trainers..." desc="Please wait while we fetch your data." />
+      ) : (
+        <>
+          <div className="ad-staff-grid">
+            {displayTrainers.map(t => (
+              <div className="ad-card ad-staff-card" key={t._id}>
+                <div className="ad-staff-header">
+                  <div className="ad-avatar" style={{ width:46, height:46, fontSize:".85rem" }}>{t.avatar}</div>
+                  <div>
+                    <strong>{t.name}</strong>
+                    <span style={{ fontSize:".75rem", color:"var(--text-secondary)", display:"block" }}>{t.role}</span>
+                    <ABadge s={t.status} />
+                  </div>
+                </div>
+                <p style={{ fontSize:".8rem", color:"var(--text-secondary)", margin:"10px 0 12px" }}>{t.specialization}</p>
+                <div className="ad-staff-stats">
+                  <div><strong>{t.clients || 0}</strong><span>Clients</span></div>
+                  <div><strong>{t.sessions || 0}</strong><span>Sessions</span></div>
+                  <div><strong>{typeof t.rating === 'object' ? (t.rating?.average || 4.5) : (t.rating || 4.5)}⭐</strong><span>Rating</span></div>
+                </div>
+                <div style={{ marginTop:12, display:"flex", gap:8 }}>
+                  <button
+                    className="btn btn-outline ad-btn-sm"
+                    onClick={() => setProfileTrainer(t)}
+                  >
+                    View Profile
+                  </button>
+                  {t.role !== "Reception" && (
+                    <button className="btn btn-primary ad-btn-sm" onClick={() => setAssignModal(t)}>Assign Client</button>
+                  )}
+                </div>
               </div>
-            </div>
-            <p style={{ fontSize:".8rem", color:"var(--text-secondary)", margin:"10px 0 12px" }}>{t.specialization}</p>
-            <div className="ad-staff-stats">
-              <div><strong>{t.clients}</strong><span>Clients</span></div>
-              <div><strong>{t.sessions}</strong><span>Sessions</span></div>
-              <div><strong>{t.rating}⭐</strong><span>Rating</span></div>
-            </div>
-            <div style={{ marginTop:12, display:"flex", gap:8 }}>
-              <button
-                className="btn btn-outline ad-btn-sm"
-                onClick={() => setProfileTrainer(t)}
-              >
-                View Profile
-              </button>
-              {t.role !== "Reception" && (
-                <button className="btn btn-primary ad-btn-sm" onClick={() => setAssignModal(t)}>Assign Client</button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="ad-card">
-        <div className="ad-card-head"><h3>📊 Performance Summary</h3></div>
-        <table className="ad-table">
-          <thead><tr><th>Trainer</th><th>Clients</th><th>Sessions/Month</th><th>Rating</th><th>Revenue</th><th>Status</th></tr></thead>
-          <tbody>
-            {enriched.map(t => (
-              <tr key={t.id} style={{ cursor: "pointer" }} onClick={() => setProfileTrainer(t)}>
-                <td><strong>{t.name}</strong><div style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{t.specialization}</div></td>
-                <td>{t.clients}</td>
-                <td>{t.sessions}</td>
-                <td>{"⭐".repeat(Math.round(t.rating))} {t.rating}</td>
-                <td>${(t.sessions * 9.5).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")}</td>
-                <td><ABadge s={t.status} /></td>
-              </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+          <div className="ad-card">
+            <div className="ad-card-head"><h3>📊 Performance Summary</h3></div>
+            <table className="ad-table">
+              <thead><tr><th>Trainer</th><th>Clients</th><th>Sessions/Month</th><th>Rating</th><th>Revenue</th><th>Status</th></tr></thead>
+              <tbody>
+                {displayTrainers.map(t => (
+                  <tr key={t._id} style={{ cursor: "pointer" }} onClick={() => setProfileTrainer(t)}>
+                    <td><strong>{t.name}</strong><div style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{t.specialization}</div></td>
+                    <td>{t.clients || 0}</td>
+                    <td>{t.sessions || 0}</td>
+                    <td>{"⭐".repeat(Math.round(typeof t.rating === 'object' ? (t.rating?.average || 4.5) : (t.rating || 4.5)))} {typeof t.rating === 'object' ? (t.rating?.average || 4.5) : (t.rating || 4.5)}</td>
+                    <td>${((t.sessions || 0) * 9.5).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",")}</td>
+                    <td><ABadge s={t.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {/* Trainer Profile Sidebar */}
       <TrainerProfileSidebar
         trainer={profileTrainer}
-        members={members}
+        members={[]}
         onClose={() => setProfileTrainer(null)}
         onAssigned={({ member, trainer: tName }) => {
           setProfileTrainer(null);
@@ -629,7 +974,15 @@ function AdminTrainers({ openForm }) {
         }}
         onEdit={(t) => {
           setProfileTrainer(null);
-          show(`Edit form for ${t.name} coming soon!`);
+          setEditingTrainer(t);
+          setEditFormData({
+            fullName: t.name || "",
+            email: t.email || "",
+            phone: t.phone || "",
+            gender: t.gender || "male",
+            specialization: t.specialization || "",
+            assignedBranch: t.assignedBranch || "",
+          });
         }}
       />
 
@@ -639,7 +992,7 @@ function AdminTrainers({ openForm }) {
             <label>Select Member</label>
             <select className="ad-input">
               <option value="">— Choose member —</option>
-              {members.filter(m => m.status === "active").map(m => <option key={m.id}>{m.name} ({m.plan})</option>)}
+              {displayTrainers.map(m => <option key={m._id}>{m.name} ({m.specialization})</option>)}
             </select>
           </div>
           <div className="ad-form-group">
@@ -647,7 +1000,125 @@ function AdminTrainers({ openForm }) {
             <select className="ad-input"><option>Personal Training</option><option>Group Class</option><option>Nutrition Coaching</option></select>
           </div>
           <div className="ad-form-group"><label>Start Date</label><input className="ad-input" type="date" /></div>
-          <button className="btn btn-primary" style={{ width:"100%", marginTop:8 }} onClick={() => { setAssignModal(null); show("Client assigned!"); }}>Confirm Assignment</button>
+          <button className="btn btn-primary" style={{ width:"100%", marginTop:8 }} onClick={() => { setAssignModal(null); show("Client assigned!"); }} disabled={isSubmitting}>Confirm Assignment</button>
+        </AdModal>
+      )}
+
+      {/* Add Trainer Modal */}
+      {showAddTrainer && (
+        <AdModal title="Add New Trainer" onClose={() => setShowAddTrainer(false)}>
+          {[["Full Name","fullName","text"],["Email","email","email"],["Phone","phone","tel"],["Password","password","password"],["Salary","salary","number"]].map(([label,key,type]) => (
+            <div className="ad-form-group" key={key}>
+              <label>{label}</label>
+              <input className="ad-input" type={type} placeholder={label} value={newTrainer[key]} onChange={e => setNewTrainer(p => ({ ...p, [key]:e.target.value }))} disabled={isSubmitting} />
+            </div>
+          ))}
+          <div className="ad-form-group">
+            <label>Gender</label>
+            <select className="ad-input" value={newTrainer.gender} onChange={e => setNewTrainer(p => ({ ...p, gender:e.target.value }))} disabled={isSubmitting}>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div className="ad-form-group">
+            <label>Assigned Branch (Optional)</label>
+            <select className="ad-input" value={newTrainer.assignedBranch} onChange={e => setNewTrainer(p => ({ ...p, assignedBranch:e.target.value }))} disabled={isSubmitting || branchesLoading}>
+              <option value="">— Auto-assign first branch —</option>
+              {branches.map(b => (
+                <option key={b._id} value={b._id}>{b.branchName} ({b.branchCode})</option>
+              ))}
+            </select>
+          </div>
+          <div className="ad-form-group">
+            <label>Specialization (Optional)</label>
+            <input className="ad-input" type="text" placeholder="e.g., Yoga, Strength Training" value={newTrainer.specialization} onChange={e => setNewTrainer(p => ({ ...p, specialization:e.target.value }))} disabled={isSubmitting} />
+          </div>
+          <button className="btn btn-primary" style={{ width:"100%", marginTop:8 }} onClick={addTrainer} disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add Trainer"}
+          </button>
+        </AdModal>
+      )}
+
+      {/* Edit Trainer Modal */}
+      {editingTrainer && (
+        <AdModal title={`Edit Trainer: ${editingTrainer.name}`} onClose={() => setEditingTrainer(null)}>
+          {[["Full Name","fullName","text"],["Email","email","email"],["Phone","phone","tel"]].map(([label,key,type]) => (
+            <div className="ad-form-group" key={key}>
+              <label>{label}</label>
+              <input className="ad-input" type={type} placeholder={label} value={editFormData[key]} onChange={e => setEditFormData(p => ({ ...p, [key]:e.target.value }))} disabled={isSubmitting} />
+            </div>
+          ))}
+          <div className="ad-form-group">
+            <label>Gender</label>
+            <select className="ad-input" value={editFormData.gender} onChange={e => setEditFormData(p => ({ ...p, gender:e.target.value }))} disabled={isSubmitting}>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div className="ad-form-group">
+            <label>Assigned Branch</label>
+            <select className="ad-input" value={editFormData.assignedBranch} onChange={e => setEditFormData(p => ({ ...p, assignedBranch:e.target.value }))} disabled={isSubmitting || branchesLoading}>
+              <option value="">— Select branch —</option>
+              {branches.map(b => (
+                <option key={b._id} value={b._id}>{b.branchName} ({b.branchCode})</option>
+              ))}
+            </select>
+          </div>
+          <div className="ad-form-group">
+            <label>Specialization</label>
+            <select className="ad-input" value={editFormData.specialization} onChange={e => setEditFormData(p => ({ ...p, specialization:e.target.value }))} disabled={isSubmitting}>
+              <option value="">— Select specialization —</option>
+              <option value="strength-training">Strength Training</option>
+              <option value="cardio">Cardio</option>
+              <option value="yoga">Yoga</option>
+              <option value="pilates">Pilates</option>
+              <option value="crossfit">CrossFit</option>
+              <option value="bodybuilding">Bodybuilding</option>
+              <option value="weight-loss">Weight Loss</option>
+              <option value="nutrition">Nutrition</option>
+              <option value="sports-training">Sports Training</option>
+              <option value="rehabilitation">Rehabilitation</option>
+              <option value="functional-training">Functional Training</option>
+              <option value="hiit">HIIT</option>
+              <option value="zumba">Zumba</option>
+              <option value="martial-arts">Martial Arts</option>
+              <option value="personal-training">Personal Training</option>
+              <option value="group-fitness">Group Fitness</option>
+            </select>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button className="btn btn-primary" style={{ flex:1 }} onClick={async () => {
+              if (!editFormData.fullName || !editFormData.email || !editFormData.phone) {
+                show("Please fill in all required fields");
+                return;
+              }
+              setIsSubmitting(true);
+              try {
+                await updateTrainer(editingTrainer._id, {
+                  fullName: editFormData.fullName,
+                  email: editFormData.email,
+                  phone: editFormData.phone,
+                  gender: editFormData.gender,
+                  specialization: editFormData.specialization ? [editFormData.specialization] : [],
+                  assignedBranch: editFormData.assignedBranch || undefined,
+                });
+                setEditingTrainer(null);
+                show("Trainer updated successfully!");
+                fetchTrainers(1, 10);
+              } catch (error) {
+                show(`Error: ${error.message || "Failed to update trainer"}`);
+              } finally {
+                setIsSubmitting(false);
+              }
+            }} disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </button>
+            <button className="btn btn-outline" style={{ flex:1 }} onClick={() => setEditingTrainer(null)} disabled={isSubmitting}>
+              Cancel
+            </button>
+          </div>
         </AdModal>
       )}
     </div>
@@ -656,12 +1127,33 @@ function AdminTrainers({ openForm }) {
 
 // ─── STAFF: PERMISSIONS ───────────────────────────────────────────────────────
 function AdminPermissions() {
-  const [perms, setPerms] = useState(trainers.map(t => ({ ...t })));
+  const { trainers: backendTrainers, trainersLoading } = useAdminDashboard();
+  const [perms, setPerms] = useState([]);
   const { toast, show } = useToast();
+
+  // Update perms when backend trainers load
+  useEffect(() => {
+    if (backendTrainers && backendTrainers.length > 0) {
+      setPerms(backendTrainers.map(t => ({
+        _id: t._id,
+        id: t._id,
+        name: t.fullName,
+        role: "Trainer",
+        avatar: (t.fullName || "T").charAt(0).toUpperCase(),
+        permissions: { members: true, billing: false, reports: false }
+      })));
+    }
+  }, [backendTrainers]);
+
   const toggle = (id, key) => {
     setPerms(prev => prev.map(t => t.id === id ? { ...t, permissions: { ...t.permissions, [key]: !t.permissions[key] } } : t));
     show("Permission updated!");
   };
+
+  if (trainersLoading) {
+    return <div className="ad-section"><EmptyState icon="⏳" title="Loading trainers..." desc="Please wait..." /></div>;
+  }
+
   return (
     <div className="ad-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
@@ -677,22 +1169,26 @@ function AdminPermissions() {
               </tr>
             </thead>
             <tbody>
-              {perms.map(t => (
-                <tr key={t.id}>
-                  <td>
-                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <div className="ad-avatar" style={{ width:30, height:30, fontSize:".65rem" }}>{t.avatar}</div>
-                      <strong>{t.name}</strong>
-                    </div>
-                  </td>
-                  <td><ABadge s={t.role.toLowerCase().replace(/ /g,"_")} /></td>
-                  {["members","billing","reports"].map(key => (
-                    <td key={key}>
-                      <div className={`ad-toggle ${t.permissions[key] ? "ad-toggle-on" : ""}`} onClick={() => toggle(t.id, key)} style={{ cursor:"pointer" }} />
+              {perms.length > 0 ? (
+                perms.map(t => (
+                  <tr key={t.id}>
+                    <td>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div className="ad-avatar" style={{ width:30, height:30, fontSize:".65rem" }}>{t.avatar}</div>
+                        <strong>{t.name}</strong>
+                      </div>
                     </td>
-                  ))}
-                </tr>
-              ))}
+                    <td><ABadge s={t.role.toLowerCase().replace(/ /g,"_")} /></td>
+                    {["members","billing","reports"].map(key => (
+                      <td key={key}>
+                        <div className={`ad-toggle ${t.permissions[key] ? "ad-toggle-on" : ""}`} onClick={() => toggle(t.id, key)} style={{ cursor:"pointer" }} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan="5" style={{ textAlign: "center", padding: "20px" }}>No trainers found</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -812,6 +1308,7 @@ function AdminBookings() {
 
 // ─── CLASSES: CATEGORIES ──────────────────────────────────────────────────────
 function AdminCategories({ openForm }) {
+  const { trainers: backendTrainers } = useAdminDashboard();
   const [classList, setClassList] = useState(classes);
   const [catFilter, setCatFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
@@ -889,7 +1386,7 @@ function AdminCategories({ openForm }) {
             <label>Trainer</label>
             <select className="ad-input" value={newClass.trainer} onChange={e => setNewClass(p => ({ ...p, trainer:e.target.value }))}>
               <option value="">— Select trainer —</option>
-              {trainers.filter(t => t.role !== "Reception").map(t => <option key={t.id}>{t.name}</option>)}
+              {(backendTrainers || []).map(t => <option key={t._id}>{t.fullName}</option>)}
             </select>
           </div>
           <div className="ad-form-group">
@@ -1148,7 +1645,16 @@ function AdminAnnouncements() {
 // ─── ENGAGEMENT: COMMUNICATION ────────────────────────────────────────────────
 function AdminCommunication() {
   const [tab, setTab] = useState("email");
+  const { members: backendMembers, membersLoading } = useAdminDashboard();
   const { toast, show } = useToast();
+  
+  // Map backend members to display format
+  const displayMembers = (backendMembers || []).map(m => ({
+    id: m._id,
+    name: m.fullName || "Unknown",
+    email: m.email || "—",
+  }));
+  
   return (
     <div className="ad-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
@@ -1162,9 +1668,9 @@ function AdminCommunication() {
         {tab === "individual" && (
           <div className="ad-form-group">
             <label>Select Member</label>
-            <select className="ad-input">
+            <select className="ad-input" disabled={membersLoading}>
               <option value="">— Choose member —</option>
-              {members.map(m => <option key={m.id}>{m.name} ({m.email})</option>)}
+              {displayMembers.map(m => <option key={m.id}>{m.name} ({m.email})</option>)}
             </select>
           </div>
         )}
@@ -1244,6 +1750,25 @@ function AdminRevReport() {
 function AdminAttReport() {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const monthly = [3200,3450,3100,3600,3380,3720,3550,3800,3650,3900,3750,4280];
+  const {
+    attendance: backendAttendance,
+    fetchAttendance,
+  } = useAdminDashboard();
+
+  // Fetch attendance on component mount
+  useEffect(() => {
+    fetchAttendance(1, 100);
+  }, [fetchAttendance]);
+
+  // Calculate weekly attendance from backend data
+  const weeklyAttendance = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((day, dayIndex) => {
+    const count = backendAttendance.filter(a => {
+      const date = new Date(a.attendanceDate);
+      return date.getDay() === (dayIndex + 1) % 7;
+    }).length;
+    return count;
+  });
+
   return (
     <div className="ad-section">
       <div className="ad-section-head">
@@ -1251,14 +1776,14 @@ function AdminAttReport() {
         <button className="btn btn-outline ad-btn-sm">⬇ Export</button>
       </div>
       <div className="ad-kpi-grid" style={{ gridTemplateColumns:"repeat(3,1fr)" }}>
-        <KpiCard icon="🏃" label="Avg Daily Check-ins" value="138" change="+12 vs last month" color="#3b82f6" />
-        <KpiCard icon="📅" label="Best Day" value="Saturday" change="189 avg check-ins" color="#22c55e" />
-        <KpiCard icon="📊" label="Monthly Total" value="4,280" change="This month" color="var(--accent)" />
+        <KpiCard icon="🏃" label="Avg Daily Check-ins" value={Math.round(backendAttendance.length / 7)} change="+12 vs last month" color="#3b82f6" />
+        <KpiCard icon="📅" label="Best Day" value="Saturday" change={`${Math.max(...weeklyAttendance)} avg check-ins`} color="#22c55e" />
+        <KpiCard icon="📊" label="Monthly Total" value={backendAttendance.length} change="This month" color="var(--accent)" />
       </div>
       <div className="ad-two-col">
         <div className="ad-card">
           <div className="ad-card-head"><h3>Daily Attendance (This Week)</h3></div>
-          <BarChart data={attendanceData.map(d=>d.checkins)} labels={attendanceData.map(d=>d.day)} color="#3b82f6" height={110} />
+          <BarChart data={weeklyAttendance} labels={["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]} color="#3b82f6" height={110} />
         </div>
         <div className="ad-card">
           <div className="ad-card-head"><h3>Monthly Attendance (12 months)</h3></div>
@@ -1282,6 +1807,22 @@ function AdminAttReport() {
 }
 
 function AdminPerfReport() {
+  const { trainers: backendTrainers, trainersLoading } = useAdminDashboard();
+
+  // Map backend trainers to display format
+  const displayTrainers = (backendTrainers || []).map(t => ({
+    _id: t._id,
+    name: t.fullName,
+    specialization: t.specialization?.join(", ") || "—",
+    clients: t.assignedMembers?.length || 0,
+    sessions: t.sessionsCompleted || 0,
+    rating: typeof t.rating === 'object' ? (t.rating?.average || 4.5) : (t.rating || 4.5),
+  }));
+
+  if (trainersLoading) {
+    return <div className="ad-section"><EmptyState icon="⏳" title="Loading..." /></div>;
+  }
+
   return (
     <div className="ad-section">
       <div className="ad-section-head">
@@ -1294,19 +1835,23 @@ function AdminPerfReport() {
           <table className="ad-table">
             <thead><tr><th>Trainer</th><th>Clients</th><th>Sessions</th><th>Rating</th><th>Revenue</th><th>Retention</th></tr></thead>
             <tbody>
-              {trainers.filter(t=>t.role!=="Reception").map(t => (
-                <tr key={t.id}>
-                  <td><strong>{t.name}</strong><div style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{t.specialization}</div></td>
-                  <td>{t.clients}</td>
-                  <td>{t.sessions}</td>
-                  <td>{"⭐".repeat(Math.round(t.rating))} {t.rating}</td>
-                  <td>${(t.sessions * 9.5).toFixed(0)}</td>
-                  <td>
-                    <ProgressBar value={t.rating * 20} color="#22c55e" />
-                    <span style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{(t.rating * 20).toFixed(0)}%</span>
-                  </td>
-                </tr>
-              ))}
+              {displayTrainers.length > 0 ? (
+                displayTrainers.map(t => (
+                  <tr key={t._id}>
+                    <td><strong>{t.name}</strong><div style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{t.specialization}</div></td>
+                    <td>{t.clients}</td>
+                    <td>{t.sessions}</td>
+                    <td>{"⭐".repeat(Math.round(t.rating))} {t.rating}</td>
+                    <td>${(t.sessions * 9.5).toFixed(0)}</td>
+                    <td>
+                      <ProgressBar value={t.rating * 20} color="#22c55e" />
+                      <span style={{ fontSize:".72rem", color:"var(--text-secondary)" }}>{(t.rating * 20).toFixed(0)}%</span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan="6" style={{ textAlign: "center", padding: "20px" }}>No trainers found</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -2076,9 +2621,26 @@ export default function AdminDashboardPage() {
   const { activeForm, formData, openForm, closeForm, isOpen } = useFormModal();
   const [toast, setToast] = useState(null);
   const { themeId, setThemeId, themes } = useDashboardTheme();
+  const { 
+    members, trainers, attendance,
+    membersLoading, trainersLoading, attendanceLoading,
+    membersError, trainersError, attendanceError,
+    fetchMembers, fetchTrainers, fetchAttendance,
+    createMember, updateMember, deleteMember,
+    createTrainer, updateTrainer, deleteTrainer,
+    createAttendance, updateAttendance, deleteAttendance
+  } = useAdminDashboard();
+  
   const go = useCallback(id => setActive(id), []);
   const allItems = [DASHBOARD_ITEM, ...NAV_GROUPS.flatMap(g => g.items)];
   const currentLabel = allItems.find(i => i.id === active)?.label || "Dashboard";
+  
+  // Load data on mount
+  useEffect(() => {
+    fetchMembers();
+    fetchTrainers();
+    fetchAttendance();
+  }, [fetchMembers, fetchTrainers, fetchAttendance]);
 
   const handleFormSubmit = (data) => {
     closeForm();
