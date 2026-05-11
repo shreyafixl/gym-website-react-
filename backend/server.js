@@ -162,7 +162,7 @@ app.use('/api/trainer/notifications', require('./routes/trainerNotificationRoute
 app.use('/api/trainer/dashboard', require('./routes/trainerDashboardRoutes'));
 
 // Super Admin Routes
-app.use('/api/superadmin/auth', require('./routes/authRoutes'));
+app.use('/api/superadmin/auth', require('./routes/superadminAuthRoutes'));
 app.use('/api/superadmin/users', require('./routes/userRoutes'));
 app.use('/api/superadmin/branches', require('./routes/branchRoutes'));
 app.use('/api/superadmin/financial', require('./routes/financialRoutes'));
