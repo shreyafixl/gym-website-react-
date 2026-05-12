@@ -21,7 +21,7 @@ const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
 /**
- * Data Management Routes
+ * SuperAdmin Data Management Routes
  * All routes require SuperAdmin authentication
  */
 
@@ -35,7 +35,7 @@ router.get(
 
 // Backup routes
 router.post(
-  '/backup',
+  '/backups',
   protect,
   authorize('superadmin'),
   createBackup

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Base URL - change this to your backend URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Log API base URL for debugging
 console.log('[API] Base URL:', API_BASE_URL);

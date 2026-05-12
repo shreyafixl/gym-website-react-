@@ -168,6 +168,11 @@ app.use('/api/superadmin/branches', require('./routes/branchRoutes'));
 app.use('/api/superadmin/financial', require('./routes/financialRoutes'));
 app.use('/api/superadmin/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/superadmin/communication', require('./routes/communicationRoutes'));
+app.use('/api/superadmin/equipment', require('./routes/equipmentRoutes'));
+app.use('/api/superadmin/vendors', require('./routes/vendorRoutes'));
+app.use('/api/superadmin/integrations', require('./routes/integrationRoutes'));
+app.use('/api/superadmin/data-management', require('./routes/superadminDataManagementRoutes'));
+app.use('/api/superadmin/advanced', require('./routes/advancedRoutes'));
 
 // Attendance Routes
 app.use('/api/attendance', require('./routes/attendanceRoutes'));

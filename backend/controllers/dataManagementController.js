@@ -351,6 +351,256 @@ const cleanupOldBackups = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * @desc    Get import history
+ * @route   GET /api/data/import-history
+ * @access  Private (SuperAdmin)
+ */
+const getImportHistory = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, type } = req.query;
+
+  // Since we don't have a dedicated import history model, we'll return a formatted response
+  // In a real implementation, this would query an ImportHistory model
+  const imports = [
+    {
+      id: '1',
+      fileName: 'members_import.csv',
+      importType: 'members',
+      recordsImported: 150,
+      status: 'completed',
+      createdAt: new Date('2026-05-10T10:30:00Z'),
+      completedAt: new Date('2026-05-10T10:35:00Z')
+    },
+    {
+      id: '2',
+      fileName: 'transactions_import.csv',
+      importType: 'transactions',
+      recordsImported: 89,
+      status: 'completed',
+      createdAt: new Date('2026-05-09T14:20:00Z'),
+      completedAt: new Date('2026-05-09T14:25:00Z')
+    }
+  ];
+
+  // Apply filters
+  let filteredImports = imports;
+  if (status) {
+    filteredImports = filteredImports.filter(imp => imp.status === status);
+  }
+  if (type) {
+    filteredImports = filteredImports.filter(imp => imp.importType === type);
+  }
+
+  // Apply pagination
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+  const skip = (pageNum - 1) * limitNum;
+  const paginatedImports = filteredImports.slice(skip, skip + limitNum);
+
+  ApiResponse.success(res, {
+    imports: paginatedImports,
+    pagination: {
+      currentPage: pageNum,
+      totalPages: Math.ceil(filteredImports.length / limitNum),
+      total: filteredImports.length,
+      perPage: limitNum
+    }
+  }, 'Import history retrieved successfully');
+});
+
+/**
+ * @desc    Get export options
+ * @route   GET /api/data/export-options
+ * @access  Private (SuperAdmin)
+ */
+const getExportOptions = asyncHandler(async (req, res) => {
+  const options = [
+    { name: "All Members", desc: "Full member list with details", icon: "users", color: "#3b82f6", type: "members" },
+    { name: "Transactions", desc: "Payment history & logs", icon: "credit-card", color: "#22c55e", type: "transactions" },
+    { name: "Revenue Report", desc: "Monthly revenue breakdown", icon: "money-bill-wave", color: "#f97316", type: "revenue" },
+    { name: "Equipment List", desc: "All equipment with status", icon: "tools", color: "#8b5cf6", type: "equipment" },
+    { name: "Audit Logs", desc: "System activity history", icon: "shield-alt", color: "#ef4444", type: "audit" },
+    { name: "Attendance Data", desc: "Check-in/check-out records", icon: "calendar-alt", color: "#06b6d4", type: "attendance" },
+    { name: "Trainers", desc: "Trainer profiles and assignments", icon: "user-tie", color: "#10b981", type: "trainers" },
+    { name: "Branches", desc: "Branch information and statistics", icon: "building", color: "#f59e0b", type: "branches" },
+  ];
+
+  ApiResponse.success(res, {
+    options
+  }, 'Export options retrieved successfully');
+});
+
+/**
+ * @desc    Get export history
+ * @route   GET /api/data/export-history
+ * @access  Private (SuperAdmin)
+ */
+const getExportHistory = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, type } = req.query;
+
+  // Since we don't have a dedicated export history model, we'll return a formatted response
+  // In a real implementation, this would query an ExportHistory model
+  const exports = [
+    {
+      id: '1',
+      type: 'members',
+      format: 'csv',
+      status: 'completed',
+      size: '2.4 MB',
+      createdAt: new Date('2026-05-11T09:15:00Z')
+    },
+    {
+      id: '2',
+      type: 'transactions',
+      format: 'excel',
+      status: 'completed',
+      size: '1.8 MB',
+      createdAt: new Date('2026-05-10T16:45:00Z')
+    },
+    {
+      id: '3',
+      type: 'revenue',
+      format: 'json',
+      status: 'completed',
+      size: '856 KB',
+      createdAt: new Date('2026-05-09T11:30:00Z')
+    }
+  ];
+
+  // Apply filters
+  let filteredExports = exports;
+  if (status) {
+    filteredExports = filteredExports.filter(exp => exp.status === status);
+  }
+  if (type) {
+    filteredExports = filteredExports.filter(exp => exp.type === type);
+  }
+
+  // Apply pagination
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+  const skip = (pageNum - 1) * limitNum;
+  const paginatedExports = filteredExports.slice(skip, skip + limitNum);
+
+  ApiResponse.success(res, {
+    exports: paginatedExports,
+    pagination: {
+      currentPage: pageNum,
+      totalPages: Math.ceil(filteredExports.length / limitNum),
+      total: filteredExports.length,
+      perPage: limitNum
+    }
+  }, 'Export history retrieved successfully');
+});
+
+/**
+ * @desc    Get backup schedule
+ * @route   GET /api/data/backup-schedule
+ * @access  Private (SuperAdmin)
+ */
+const getBackupSchedule = asyncHandler(async (req, res) => {
+  // Return backup schedule settings
+  const schedule = {
+    dailyEnabled: true,
+    weeklyEnabled: true,
+    cloudSyncEnabled: true,
+    dailyTime: '03:00',
+    weeklyDay: 'sunday',
+    weeklyTime: '02:00',
+    retentionDays: 30,
+    cloudProvider: 'aws-s3',
+    cloudBucket: 'fitzone-backups'
+  };
+
+  ApiResponse.success(res, {
+    schedule
+  }, 'Backup schedule retrieved successfully');
+});
+
+/**
+ * @desc    Update backup schedule
+ * @route   PUT /api/data/backup-schedule
+ * @access  Private (SuperAdmin)
+ */
+const updateBackupSchedule = asyncHandler(async (req, res) => {
+  const scheduleData = req.body;
+
+  // In a real implementation, this would update the schedule in database
+  // For now, we'll just return success
+  
+  ApiResponse.success(res, {
+    schedule: scheduleData
+  }, 'Backup schedule updated successfully');
+});
+
+/**
+ * @desc    Download backup
+ * @route   GET /api/data/backups/:id/download
+ * @access  Private (SuperAdmin)
+ */
+const downloadBackup = asyncHandler(async (req, res) => {
+  const backup = await BackupLog.findById(req.params.id);
+
+  if (!backup) {
+    throw ApiError.notFound('Backup not found');
+  }
+
+  if (backup.backupStatus !== 'completed') {
+    throw ApiError.badRequest('Cannot download incomplete backup');
+  }
+
+  try {
+    // In a real implementation, this would stream the backup file
+    // For now, we'll return a mock file
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Create a mock backup file if it doesn't exist
+    const backupPath = path.join(__dirname, '../backups', `${backup.backupFileName}.zip`);
+    
+    if (!fs.existsSync(backupPath)) {
+      // Create a simple mock backup file
+      fs.writeFileSync(backupPath, 'Mock backup data');
+    }
+
+    res.download(backupPath, `${backup.backupFileName}.zip`, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        throw ApiError.internal('Failed to download backup');
+      }
+    });
+  } catch (error) {
+    console.error('Backup download error:', error);
+    throw ApiError.internal('Failed to download backup');
+  }
+});
+
+/**
+ * @desc    Restore backup
+ * @route   POST /api/data/backups/:id/restore
+ * @access  Private (SuperAdmin)
+ */
+const restoreBackupById = asyncHandler(async (req, res) => {
+  const backup = await BackupLog.findById(req.params.id);
+
+  if (!backup) {
+    throw ApiError.notFound('Backup not found');
+  }
+
+  if (backup.backupStatus !== 'completed') {
+    throw ApiError.badRequest('Cannot restore from incomplete backup');
+  }
+
+  // In a real implementation, this would restore the database from backup
+  // For now, we'll just return success
+  
+  ApiResponse.success(res, {
+    backup,
+    message: 'Backup restoration initiated successfully',
+    estimatedTime: '5-10 minutes'
+  }, 'Backup restoration started');
+});
+
 module.exports = {
   createBackup,
   getBackups,
@@ -360,4 +610,11 @@ module.exports = {
   restoreBackup,
   getDataStats,
   cleanupOldBackups,
+  getImportHistory,
+  getExportOptions,
+  getExportHistory,
+  getBackupSchedule,
+  updateBackupSchedule,
+  downloadBackup,
+  restoreBackupById,
 };

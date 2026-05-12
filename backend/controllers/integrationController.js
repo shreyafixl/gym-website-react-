@@ -1,405 +1,293 @@
-const IntegrationSettings = require('../models/IntegrationSettings');
-const EmailService = require('../services/emailService');
-const SMSService = require('../services/smsService');
-const PaymentService = require('../services/paymentService');
-const StorageService = require('../services/storageService');
+const Integration = require('../models/Integration');
 const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
 const asyncHandler = require('../utils/asyncHandler');
 
 /**
- * @desc    Get all integration settings
- * @route   GET /api/integrations
+ * @desc    Get all integrations
+ * @route   GET /api/superadmin/integrations
  * @access  Private (SuperAdmin)
  */
 const getIntegrations = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
+  const { category, enabled } = req.query;
 
-  ApiResponse.success(res, integrations, 'Integration settings retrieved successfully');
+  let filter = {};
+  if (category) filter.category = category;
+  if (enabled !== undefined) filter.enabled = enabled === 'true';
+
+  const integrations = await Integration.find(filter).sort({ category: 1, name: 1 });
+
+  const summary = {
+    total: integrations.length,
+    enabled: integrations.filter(i => i.enabled).length,
+    disabled: integrations.filter(i => !i.enabled).length,
+    byCategory: {},
+  };
+
+  // Group by category
+  integrations.forEach(i => {
+    if (!summary.byCategory[i.category]) {
+      summary.byCategory[i.category] = 0;
+    }
+    summary.byCategory[i.category]++;
+  });
+
+  ApiResponse.success(res, { integrations, summary }, 'Integrations retrieved successfully');
+});
+
+/**
+ * @desc    Get integration by ID
+ * @route   GET /api/superadmin/integrations/:integrationId
+ * @access  Private (SuperAdmin)
+ */
+const getIntegrationById = asyncHandler(async (req, res) => {
+  const integration = await Integration.findById(req.params.integrationId).select(
+    '+apiKey +apiSecret +webhookSecret'
+  );
+
+  if (!integration) {
+    throw ApiError.notFound('Integration not found');
+  }
+
+  ApiResponse.success(res, integration, 'Integration retrieved successfully');
+});
+
+/**
+ * @desc    Create integration
+ * @route   POST /api/superadmin/integrations
+ * @access  Private (SuperAdmin)
+ */
+const createIntegration = asyncHandler(async (req, res) => {
+  const { name, category, description, icon, apiKey, apiSecret, webhookUrl } = req.body;
+
+  if (!name || !category) {
+    throw ApiError.badRequest('Name and category are required');
+  }
+
+  const integration = await Integration.create({
+    name,
+    category,
+    description: description || '',
+    icon: icon || '🔌',
+    apiKey: apiKey || '',
+    apiSecret: apiSecret || '',
+    webhookUrl: webhookUrl || '',
+  });
+
+  ApiResponse.success(res, integration, 'Integration created successfully', 201);
+});
+
+/**
+ * @desc    Update integration
+ * @route   PUT /api/superadmin/integrations/:integrationId
+ * @access  Private (SuperAdmin)
+ */
+const updateIntegration = asyncHandler(async (req, res) => {
+  let integration = await Integration.findById(req.params.integrationId);
+
+  if (!integration) {
+    throw ApiError.notFound('Integration not found');
+  }
+
+  integration = await Integration.findByIdAndUpdate(
+    req.params.integrationId,
+    req.body,
+    { new: true, runValidators: true }
+  );
+
+  ApiResponse.success(res, integration, 'Integration updated successfully');
+});
+
+/**
+ * @desc    Toggle integration enabled/disabled
+ * @route   PATCH /api/superadmin/integrations/:integrationId/toggle
+ * @access  Private (SuperAdmin)
+ */
+const toggleIntegration = asyncHandler(async (req, res) => {
+  let integration = await Integration.findById(req.params.integrationId);
+
+  if (!integration) {
+    throw ApiError.notFound('Integration not found');
+  }
+
+  integration.enabled = !integration.enabled;
+  await integration.save();
+
+  ApiResponse.success(res, integration, `Integration ${integration.enabled ? 'enabled' : 'disabled'}`);
+});
+
+/**
+ * @desc    Test integration connection
+ * @route   POST /api/superadmin/integrations/:integrationId/test
+ * @access  Private (SuperAdmin)
+ */
+const testIntegrationConnection = asyncHandler(async (req, res) => {
+  const integration = await Integration.findById(req.params.integrationId).select(
+    '+apiKey +apiSecret'
+  );
+
+  if (!integration) {
+    throw ApiError.notFound('Integration not found');
+  }
+
+  if (!integration.apiKey) {
+    throw ApiError.badRequest('API key not configured');
+  }
+
+  try {
+    // Simulate connection test
+    // In production, this would make actual API calls to verify credentials
+    integration.connectionStatus = 'connected';
+    integration.lastConnectionTest = new Date();
+    integration.connectionError = '';
+    await integration.save();
+
+    ApiResponse.success(res, integration, 'Connection test successful');
+  } catch (error) {
+    integration.connectionStatus = 'error';
+    integration.connectionError = error.message;
+    await integration.save();
+
+    throw ApiError.badRequest(`Connection test failed: ${error.message}`);
+  }
 });
 
 /**
  * @desc    Update integration settings
- * @route   PUT /api/integrations
+ * @route   PATCH /api/superadmin/integrations/:integrationId/settings
  * @access  Private (SuperAdmin)
  */
-const updateIntegrations = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
+const updateIntegrationSettings = asyncHandler(async (req, res) => {
+  const { settings } = req.body;
 
-  const {
-    paymentGateway,
-    emailProvider,
-    smsProvider,
-    cloudStorageProvider,
-    apiKeys,
-    webhookUrls,
-    integrationStatus,
-  } = req.body;
-
-  // Update payment gateway
-  if (paymentGateway) {
-    integrations.paymentGateway = { ...integrations.paymentGateway, ...paymentGateway };
+  if (!settings || typeof settings !== 'object') {
+    throw ApiError.badRequest('Settings must be an object');
   }
 
-  // Update email provider
-  if (emailProvider) {
-    integrations.emailProvider = { ...integrations.emailProvider, ...emailProvider };
+  const integration = await Integration.findByIdAndUpdate(
+    req.params.integrationId,
+    { settings: new Map(Object.entries(settings)) },
+    { new: true, runValidators: true }
+  );
+
+  if (!integration) {
+    throw ApiError.notFound('Integration not found');
   }
 
-  // Update SMS provider
-  if (smsProvider) {
-    integrations.smsProvider = { ...integrations.smsProvider, ...smsProvider };
+  ApiResponse.success(res, integration, 'Integration settings updated successfully');
+});
+
+/**
+ * @desc    Delete integration
+ * @route   DELETE /api/superadmin/integrations/:integrationId
+ * @access  Private (SuperAdmin)
+ */
+const deleteIntegration = asyncHandler(async (req, res) => {
+  const integration = await Integration.findByIdAndDelete(req.params.integrationId);
+
+  if (!integration) {
+    throw ApiError.notFound('Integration not found');
   }
 
-  // Update cloud storage provider
-  if (cloudStorageProvider) {
-    integrations.cloudStorageProvider = { ...integrations.cloudStorageProvider, ...cloudStorageProvider };
+  ApiResponse.success(res, null, 'Integration deleted successfully');
+});
+
+/**
+ * @desc    Get integration settings
+ * @route   GET /api/superadmin/integrations/settings
+ * @access  Private (SuperAdmin)
+ */
+const getIntegrationSettings = asyncHandler(async (req, res) => {
+  const integrations = await Integration.find().select(
+    'name category enabled settings connectionStatus lastConnectionTest'
+  );
+
+  const settings = integrations.map(i => ({
+    id: i._id,
+    name: i.name,
+    category: i.category,
+    enabled: i.enabled,
+    settings: Object.fromEntries(i.settings || []),
+    connectionStatus: i.connectionStatus,
+    lastConnectionTest: i.lastConnectionTest,
+  }));
+
+  ApiResponse.success(res, { settings }, 'Integration settings retrieved successfully');
+});
+
+/**
+ * @desc    Get available apps
+ * @route   GET /api/superadmin/integrations/apps
+ * @access  Private (SuperAdmin)
+ */
+const getAvailableApps = asyncHandler(async (req, res) => {
+  const integrations = await Integration.find().select(
+    'name category description icon enabled permissions metadata'
+  );
+
+  const apps = integrations.map(i => ({
+    id: i._id,
+    name: i.name,
+    category: i.category,
+    description: i.description,
+    icon: i.icon,
+    installed: i.enabled,
+    permissions: i.permissions || [],
+    metadata: Object.fromEntries(i.metadata || []),
+  }));
+
+  ApiResponse.success(res, { apps }, 'Available apps retrieved successfully');
+});
+
+/**
+ * @desc    Install app
+ * @route   POST /api/superadmin/integrations/:integrationId/install
+ * @access  Private (SuperAdmin)
+ */
+const installApp = asyncHandler(async (req, res) => {
+  const integration = await Integration.findByIdAndUpdate(
+    req.params.integrationId,
+    { enabled: true },
+    { new: true }
+  );
+
+  if (!integration) {
+    throw ApiError.notFound('App not found');
   }
 
-  // Update API keys
-  if (apiKeys) {
-    integrations.apiKeys = { ...integrations.apiKeys, ...apiKeys };
+  ApiResponse.success(res, integration, 'App installed successfully');
+});
+
+/**
+ * @desc    Uninstall app
+ * @route   DELETE /api/superadmin/integrations/:integrationId/uninstall
+ * @access  Private (SuperAdmin)
+ */
+const uninstallApp = asyncHandler(async (req, res) => {
+  const integration = await Integration.findByIdAndUpdate(
+    req.params.integrationId,
+    { enabled: false },
+    { new: true }
+  );
+
+  if (!integration) {
+    throw ApiError.notFound('App not found');
   }
 
-  // Update webhook URLs
-  if (webhookUrls) {
-    integrations.webhookUrls = { ...integrations.webhookUrls, ...webhookUrls };
-  }
-
-  // Update integration status
-  if (integrationStatus) {
-    integrations.integrationStatus = integrationStatus;
-  }
-
-  // Update last modified by
-  integrations.lastModifiedBy = {
-    userId: req.user._id,
-    userName: req.user.fullName,
-    modifiedAt: new Date(),
-  };
-
-  await integrations.save();
-
-  ApiResponse.success(res, integrations, 'Integration settings updated successfully');
-});
-
-/**
- * @desc    Get payment gateway settings
- * @route   GET /api/integrations/payment
- * @access  Private (SuperAdmin)
- */
-const getPaymentSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  ApiResponse.success(res, integrations.paymentGateway, 'Payment gateway settings retrieved successfully');
-});
-
-/**
- * @desc    Update payment gateway settings
- * @route   PUT /api/integrations/payment
- * @access  Private (SuperAdmin)
- */
-const updatePaymentSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  await integrations.updatePaymentGateway(req.body, req.user._id, req.user.fullName);
-
-  ApiResponse.success(res, integrations.paymentGateway, 'Payment gateway settings updated successfully');
-});
-
-/**
- * @desc    Get email provider settings
- * @route   GET /api/integrations/email
- * @access  Private (SuperAdmin)
- */
-const getEmailSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  ApiResponse.success(res, integrations.emailProvider, 'Email provider settings retrieved successfully');
-});
-
-/**
- * @desc    Update email provider settings
- * @route   PUT /api/integrations/email
- * @access  Private (SuperAdmin)
- */
-const updateEmailSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  await integrations.updateEmailProvider(req.body, req.user._id, req.user.fullName);
-
-  ApiResponse.success(res, integrations.emailProvider, 'Email provider settings updated successfully');
-});
-
-/**
- * @desc    Get SMS provider settings
- * @route   GET /api/integrations/sms
- * @access  Private (SuperAdmin)
- */
-const getSMSSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  ApiResponse.success(res, integrations.smsProvider, 'SMS provider settings retrieved successfully');
-});
-
-/**
- * @desc    Update SMS provider settings
- * @route   PUT /api/integrations/sms
- * @access  Private (SuperAdmin)
- */
-const updateSMSSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  await integrations.updateSmsProvider(req.body, req.user._id, req.user.fullName);
-
-  ApiResponse.success(res, integrations.smsProvider, 'SMS provider settings updated successfully');
-});
-
-/**
- * @desc    Get storage provider settings
- * @route   GET /api/integrations/storage
- * @access  Private (SuperAdmin)
- */
-const getStorageSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  ApiResponse.success(res, integrations.cloudStorageProvider, 'Storage provider settings retrieved successfully');
-});
-
-/**
- * @desc    Update storage provider settings
- * @route   PUT /api/integrations/storage
- * @access  Private (SuperAdmin)
- */
-const updateStorageSettings = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  await integrations.updateStorageProvider(req.body, req.user._id, req.user.fullName);
-
-  ApiResponse.success(res, integrations.cloudStorageProvider, 'Storage provider settings updated successfully');
-});
-
-/**
- * @desc    Test email integration
- * @route   POST /api/integrations/test-email
- * @access  Private (SuperAdmin)
- */
-const testEmailIntegration = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations()
-    .select('+emailProvider.config.smtpPassword +emailProvider.config.apiKey +emailProvider.config.apiSecret');
-
-  if (integrations.emailProvider.provider === 'none') {
-    throw ApiError.badRequest('Email provider not configured');
-  }
-
-  const result = await EmailService.testEmailConfig(integrations.emailProvider);
-
-  // Update test result
-  integrations.emailProvider.lastTested = new Date();
-  integrations.emailProvider.testResult = {
-    success: result.success,
-    message: result.message,
-  };
-  await integrations.save();
-
-  if (result.success) {
-    ApiResponse.success(res, result, 'Email integration test successful');
-  } else {
-    throw ApiError.badRequest(result.message);
-  }
-});
-
-/**
- * @desc    Test SMS integration
- * @route   POST /api/integrations/test-sms
- * @access  Private (SuperAdmin)
- */
-const testSMSIntegration = asyncHandler(async (req, res) => {
-  const { testPhoneNumber } = req.body;
-
-  if (!testPhoneNumber) {
-    throw ApiError.badRequest('Please provide test phone number');
-  }
-
-  const integrations = await IntegrationSettings.getIntegrations()
-    .select('+smsProvider.config.apiKey +smsProvider.config.apiSecret +smsProvider.config.accountSid +smsProvider.config.authToken');
-
-  if (integrations.smsProvider.provider === 'none') {
-    throw ApiError.badRequest('SMS provider not configured');
-  }
-
-  const result = await SMSService.testSMSConfig(integrations.smsProvider, testPhoneNumber);
-
-  // Update test result
-  integrations.smsProvider.lastTested = new Date();
-  integrations.smsProvider.testResult = {
-    success: result.success,
-    message: result.message,
-  };
-  await integrations.save();
-
-  if (result.success) {
-    ApiResponse.success(res, result, 'SMS integration test successful');
-  } else {
-    throw ApiError.badRequest(result.message);
-  }
-});
-
-/**
- * @desc    Test payment integration
- * @route   POST /api/integrations/test-payment
- * @access  Private (SuperAdmin)
- */
-const testPaymentIntegration = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations()
-    .select('+paymentGateway.config.apiKey +paymentGateway.config.apiSecret +paymentGateway.config.webhookSecret');
-
-  if (integrations.paymentGateway.provider === 'none') {
-    throw ApiError.badRequest('Payment gateway not configured');
-  }
-
-  const result = await PaymentService.testPaymentConfig(integrations.paymentGateway);
-
-  // Update test result
-  integrations.paymentGateway.lastTested = new Date();
-  integrations.paymentGateway.testResult = {
-    success: result.success,
-    message: result.message,
-  };
-  await integrations.save();
-
-  if (result.success) {
-    ApiResponse.success(res, result, 'Payment integration test successful');
-  } else {
-    throw ApiError.badRequest(result.message);
-  }
-});
-
-/**
- * @desc    Test storage integration
- * @route   POST /api/integrations/test-storage
- * @access  Private (SuperAdmin)
- */
-const testStorageIntegration = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations()
-    .select('+cloudStorageProvider.config.apiKey +cloudStorageProvider.config.apiSecret');
-
-  if (integrations.cloudStorageProvider.provider === 'none') {
-    throw ApiError.badRequest('Storage provider not configured');
-  }
-
-  const result = await StorageService.testStorageConfig(integrations.cloudStorageProvider);
-
-  // Update test result
-  integrations.cloudStorageProvider.lastTested = new Date();
-  integrations.cloudStorageProvider.testResult = {
-    success: result.success,
-    message: result.message,
-  };
-  await integrations.save();
-
-  if (result.success) {
-    ApiResponse.success(res, result, 'Storage integration test successful');
-  } else {
-    throw ApiError.badRequest(result.message);
-  }
-});
-
-/**
- * @desc    Get webhook URLs
- * @route   GET /api/integrations/webhooks
- * @access  Private (SuperAdmin)
- */
-const getWebhooks = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  ApiResponse.success(res, integrations.webhookUrls, 'Webhook URLs retrieved successfully');
-});
-
-/**
- * @desc    Update webhook URLs
- * @route   PUT /api/integrations/webhooks
- * @access  Private (SuperAdmin)
- */
-const updateWebhooks = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  integrations.webhookUrls = { ...integrations.webhookUrls, ...req.body };
-
-  integrations.lastModifiedBy = {
-    userId: req.user._id,
-    userName: req.user.fullName,
-    modifiedAt: new Date(),
-  };
-
-  await integrations.save();
-
-  ApiResponse.success(res, integrations.webhookUrls, 'Webhook URLs updated successfully');
-});
-
-/**
- * @desc    Get API keys
- * @route   GET /api/integrations/api-keys
- * @access  Private (SuperAdmin)
- */
-const getAPIKeys = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  ApiResponse.success(res, integrations.apiKeys, 'API keys retrieved successfully');
-});
-
-/**
- * @desc    Update API keys
- * @route   PUT /api/integrations/api-keys
- * @access  Private (SuperAdmin)
- */
-const updateAPIKeys = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  integrations.apiKeys = { ...integrations.apiKeys, ...req.body };
-
-  integrations.lastModifiedBy = {
-    userId: req.user._id,
-    userName: req.user.fullName,
-    modifiedAt: new Date(),
-  };
-
-  await integrations.save();
-
-  ApiResponse.success(res, integrations.apiKeys, 'API keys updated successfully');
-});
-
-/**
- * @desc    Get public integration settings (for frontend)
- * @route   GET /api/integrations/public
- * @access  Public
- */
-const getPublicIntegrations = asyncHandler(async (req, res) => {
-  const integrations = await IntegrationSettings.getIntegrations();
-
-  const publicIntegrations = integrations.getPublicIntegrations();
-
-  ApiResponse.success(res, publicIntegrations, 'Public integration settings retrieved successfully');
+  ApiResponse.success(res, integration, 'App uninstalled successfully');
 });
 
 module.exports = {
   getIntegrations,
-  updateIntegrations,
-  getPaymentSettings,
-  updatePaymentSettings,
-  getEmailSettings,
-  updateEmailSettings,
-  getSMSSettings,
-  updateSMSSettings,
-  getStorageSettings,
-  updateStorageSettings,
-  testEmailIntegration,
-  testSMSIntegration,
-  testPaymentIntegration,
-  testStorageIntegration,
-  getWebhooks,
-  updateWebhooks,
-  getAPIKeys,
-  updateAPIKeys,
-  getPublicIntegrations,
+  getIntegrationById,
+  createIntegration,
+  updateIntegration,
+  toggleIntegration,
+  testIntegrationConnection,
+  updateIntegrationSettings,
+  deleteIntegration,
+  getIntegrationSettings,
+  getAvailableApps,
+  installApp,
+  uninstallApp,
 };

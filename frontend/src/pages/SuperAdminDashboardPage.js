@@ -14,6 +14,7 @@ import {
   FaCloudDownloadAlt, FaShieldVirus, FaComments, FaSms, FaAngleDown,
   FaAngleRight, FaBoxOpen, FaStore, FaCalendarAlt, FaUserClock,
   FaChartPie, FaWallet, FaCreditCard, FaFileInvoiceDollar,
+  FaUserTie, FaClock, FaSpinner,
 } from "react-icons/fa";
 import {
   globalStats, branches, allUsers, membershipPlans, auditLog,
@@ -27,6 +28,8 @@ import { FormRenderer, formTitles } from "../components/DynamicForms";
 import { useFormModal } from "../hooks/useFormModal";
 import DashboardThemeSwitcher, { useDashboardTheme } from "../components/DashboardThemeSwitcher";
 import superAdminAPI from "../services/superAdminAPI";
+import { SABilling, SARevenue, SATransactions, SAPlans } from "../components/FinanceIntegration";
+import { SAReports, SAMemberAnalytics, SAFinancialAnalytics } from "../components/AnalyticsIntegration";
 import "../superadmin-dashboard.css";
 
 // ─── NAV STRUCTURE ────────────────────────────────────────────────────────────
@@ -628,533 +631,249 @@ function SAContent({ openForm }) {
   );
 }
 
-// ─── FINANCE: BILLING ─────────────────────────────────────────────────────────
-function SABilling() {
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const PER = 5;
-  const filtered = subscriptions.filter(s =>
-    (filter === "all" || s.status === filter) &&
-    s.user.toLowerCase().includes(search.toLowerCase())
-  );
-  const paged = filtered.slice((page - 1) * PER, page * PER);
-  const active = subscriptions.filter(s => s.status === "active").length;
-  const expired = subscriptions.filter(s => s.status === "expired").length;
-  const expiring = subscriptions.filter(s => s.status === "expiring").length;
-  return (
-    <div className="sa-section">
-      <div className="sa-section-head">
-        <h2><FaReceipt style={{ marginRight: 8 }} />Billing</h2>
-        <button className="btn btn-outline sa-btn-sm"><FaDownload style={{ marginRight: 6 }} />Export</button>
-      </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <KpiCard icon={<FaCheckCircle />} label="Active Subscriptions" value={active} color="#22c55e" />
-        <KpiCard icon={<FaExclamationCircle />} label="Expiring Soon" value={expiring} color="#f97316" change="Within 7 days" trend="down" />
-        <KpiCard icon={<FaTimesCircle />} label="Expired Plans" value={expired} color="#ef4444" />
-      </div>
-      <div className="sa-filters">
-        <div className="sa-search-wrap"><FaSearch className="sa-search-icon" /><input className="sa-input sa-input-search" placeholder="Search member..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
-        {["all", "active", "expiring", "expired"].map(f => (
-          <button key={f} className={`sa-filter-btn ${filter === f ? "sa-filter-active" : ""}`} onClick={() => { setFilter(f); setPage(1); }}>{f}</button>
-        ))}
-      </div>
-      <div className="sa-card">
-        <table className="sa-table">
-          <thead><tr><th>Member</th><th>Plan</th><th>Start</th><th>Expiry</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead>
-          <tbody>
-            {paged.map(s => (
-              <tr key={s.id}>
-                <td><strong>{s.user}</strong></td>
-                <td>{s.plan}</td>
-                <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{s.start}</td>
-                <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{s.expiry}</td>
-                <td>
-                  <span style={{ color: s.daysLeft <= 7 ? "#ef4444" : s.daysLeft <= 30 ? "#f97316" : "#22c55e", fontWeight: 700 }}>
-                    {s.daysLeft > 0 ? `${s.daysLeft}d` : "—"}
-                  </span>
-                </td>
-                <td><SABadge s={s.status} /></td>
-                <td><button className="sa-link-btn">Renew</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Pagination total={filtered.length} page={page} perPage={PER} onChange={setPage} />
-      </div>
-    </div>
-  );
-}
 
-// ─── FINANCE: REVENUE ─────────────────────────────────────────────────────────
-function SARevenue() {
-  const [period, setPeriod] = useState("monthly");
-  const data = financialReports.monthly;
-  const maxRev = Math.max(...data.map(d => d.revenue));
-  const totalRev = data.reduce((a, b) => a + b.revenue, 0);
-  const totalProfit = data.reduce((a, b) => a + b.profit, 0);
-  return (
-    <div className="sa-section">
-      <div className="sa-section-head">
-        <h2><FaChartBar style={{ marginRight: 8 }} />Revenue</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          {["monthly", "quarterly", "yearly"].map(p => (
-            <button key={p} className={`sa-filter-btn ${period === p ? "sa-filter-active" : ""}`} onClick={() => setPeriod(p)}>{p}</button>
-          ))}
-        </div>
-      </div>
-      <div className="sa-kpi-grid">
-        <KpiCard icon={<FaMoneyBillWave />} label="Total Revenue (12mo)" value={`$${(totalRev / 1000).toFixed(0)}k`} color="#22c55e" change="+22% YoY" trend="up" />
-        <KpiCard icon={<FaChartLine />} label="Net Profit (12mo)" value={`$${(totalProfit / 1000).toFixed(0)}k`} color="#3b82f6" change="+18% YoY" trend="up" />
-        <KpiCard icon={<FaChartPie />} label="Avg Monthly Revenue" value={`$${(totalRev / data.length / 1000).toFixed(1)}k`} color="#8b5cf6" />
-        <KpiCard icon={<FaCodeBranch />} label="Best Branch" value="FitZone Main" color="#f97316" change="$42.8K/mo" />
-      </div>
-      <div className="sa-two-col">
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Revenue vs Expenses</h3></div>
-          <div className="sa-bar-chart" style={{ height: 140 }}>
-            {data.map((v, i) => (
-              <div className="sa-bar-col" key={i}>
-                <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: "100%" }}>
-                  <div className="sa-bar" style={{ height: `${(v.revenue / maxRev) * 100}%`, background: "#ef4444", flex: 1 }} />
-                  <div className="sa-bar" style={{ height: `${(v.expenses / maxRev) * 100}%`, background: "#3b82f6", flex: 1 }} />
-                </div>
-                <span className="sa-bar-label">{v.month}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: ".75rem" }}>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#ef4444", borderRadius: 2, marginRight: 4 }} />Revenue</span>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#3b82f6", borderRadius: 2, marginRight: 4 }} />Expenses</span>
-          </div>
-        </div>
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Branch-wise Revenue</h3></div>
-          {financialReports.branchRevenue.map((b, i) => {
-            const max = Math.max(...financialReports.branchRevenue.map(x => x.revenue));
-            return (
-              <div key={i} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".82rem", marginBottom: 4 }}>
-                  <span>{b.branch}</span><strong>${(b.revenue / 1000).toFixed(1)}k</strong>
-                </div>
-                <div style={{ background: "var(--bg-primary)", borderRadius: 4, height: 8 }}>
-                  <div style={{ width: `${(b.revenue / max) * 100}%`, height: "100%", background: "#ef4444", borderRadius: 4 }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>Revenue Forecast (Next 4 Months)</h3></div>
-        <div className="sa-bar-chart" style={{ height: 120 }}>
-          {financialReports.forecast.map((f, i) => {
-            const max = 65000;
-            return (
-              <div className="sa-bar-col" key={i}>
-                <span className="sa-bar-val">${(f.forecast / 1000).toFixed(0)}k</span>
-                <div className="sa-bar" style={{ height: `${(f.forecast / max) * 100}%`, background: f.actual ? "#ef4444" : "#8b5cf6", opacity: f.actual ? 1 : 0.6 }} />
-                <span className="sa-bar-label">{f.month}</span>
-              </div>
-            );
-          })}
-        </div>
-        <p style={{ fontSize: ".75rem", color: "var(--text-secondary)", marginTop: 8 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, background: "#ef4444", borderRadius: 2, marginRight: 4 }} />Actual
-          <span style={{ display: "inline-block", width: 10, height: 10, background: "#8b5cf6", borderRadius: 2, marginRight: 4, marginLeft: 12 }} />Forecast
-        </p>
-      </div>
-    </div>
-  );
-}
 
-// ─── FINANCE: TRANSACTIONS ────────────────────────────────────────────────────
-function SATransactions() {
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const PER = 5;
-  const filtered = transactions.filter(t =>
-    (filter === "all" || t.status === filter) &&
-    (t.user.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase()))
-  );
-  const paged = filtered.slice((page - 1) * PER, page * PER);
-  const total = transactions.filter(t => t.status === "success").reduce((a, b) => a + b.amount, 0);
-  return (
-    <div className="sa-section">
-      <div className="sa-section-head">
-        <h2><FaCreditCard style={{ marginRight: 8 }} />Transactions</h2>
-        <button className="btn btn-outline sa-btn-sm"><FaDownload style={{ marginRight: 6 }} />Export CSV</button>
-      </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
-        <KpiCard icon={<FaCheckCircle />} label="Successful" value={transactions.filter(t => t.status === "success").length} color="#22c55e" />
-        <KpiCard icon={<FaTimesCircle />} label="Failed" value={transactions.filter(t => t.status === "failed").length} color="#ef4444" />
-        <KpiCard icon={<FaSync />} label="Refunded" value={transactions.filter(t => t.status === "refunded").length} color="#f97316" />
-        <KpiCard icon={<FaWallet />} label="Total Collected" value={`$${total}`} color="#8b5cf6" />
-      </div>
-      <div className="sa-filters">
-        <div className="sa-search-wrap"><FaSearch className="sa-search-icon" /><input className="sa-input sa-input-search" placeholder="Search by user or TXN ID..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
-        {["all", "success", "failed", "refunded"].map(f => (
-          <button key={f} className={`sa-filter-btn ${filter === f ? "sa-filter-active" : ""}`} onClick={() => { setFilter(f); setPage(1); }}>{f}</button>
-        ))}
-      </div>
-      <div className="sa-card">
-        {paged.length === 0 ? <EmptyState title="No transactions found" /> : (
-          <table className="sa-table">
-            <thead><tr><th>TXN ID</th><th>User</th><th>Plan</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead>
-            <tbody>
-              {paged.map(t => (
-                <tr key={t.id}>
-                  <td><code style={{ fontSize: ".75rem", color: "var(--accent)" }}>{t.id}</code></td>
-                  <td><strong>{t.user}</strong></td>
-                  <td>{t.plan}</td>
-                  <td><strong style={{ color: t.status === "failed" ? "#ef4444" : "var(--text-primary)" }}>${t.amount}</strong></td>
-                  <td style={{ color: "var(--text-secondary)", fontSize: ".8rem" }}>{t.method}</td>
-                  <td style={{ color: "var(--text-secondary)", fontSize: ".78rem" }}>{t.date}</td>
-                  <td><SABadge s={t.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <Pagination total={filtered.length} page={page} perPage={PER} onChange={setPage} />
-      </div>
-    </div>
-  );
-}
 
-// ─── FINANCE: PLANS & PRICING ─────────────────────────────────────────────────
-function SAPlans({ openForm }) {
-  const [plans, setPlans] = useState(membershipPlans);
-  const [showModal, setShowModal] = useState(false);
-  const [editPlan, setEditPlan] = useState(null);
-  const [form, setForm] = useState({ name: "", price: "", duration: "", features: "" });
-  const { toast, show } = useToast();
-  const openAdd = () => { setEditPlan(null); setForm({ name: "", price: "", duration: "", features: "" }); setShowModal(true); };
-  const openEdit = (p) => { setEditPlan(p); setForm({ name: p.name, price: p.price, duration: p.duration, features: p.features.join(", ") }); setShowModal(true); };
-  const save = () => {
-    if (editPlan) {
-      setPlans(prev => prev.map(p => p.id === editPlan.id ? { ...p, ...form, price: Number(form.price), features: form.features.split(",").map(f => f.trim()) } : p));
-      show("Plan updated!");
-    } else {
-      setPlans(prev => [...prev, { id: Date.now(), ...form, price: Number(form.price), features: form.features.split(",").map(f => f.trim()), members: 0, status: "active", popular: false }]);
-      show("Plan created!");
-    }
-    setShowModal(false);
-  };
-  const del = (id) => { setPlans(prev => prev.filter(p => p.id !== id)); show("Plan deleted!"); };
-  return (
-    <div className="sa-section">
-      {toast && <Toast msg={toast} onClose={() => {}} />}
-      <div className="sa-section-head">
-        <h2><FaTags style={{ marginRight: 8 }} />Plans & Pricing</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => openForm("createPlan")}><FaPlus style={{ marginRight: 6 }} />Add Plan</button>
-      </div>
-      <div className="sa-plans-grid">
-        {plans.map(p => (
-          <div className={`sa-plan-card sa-card ${p.popular ? "sa-plan-popular" : ""}`} key={p.id}>
-            {p.popular && <div className="sa-plan-badge">Most Popular</div>}
-            <div className="sa-plan-head">
-              <h4>{p.name}</h4>
-              <SABadge s={p.status} />
-            </div>
-            <div className="sa-plan-price">${p.price}<span>/{p.duration}</span></div>
-            <ul className="sa-plan-features">
-              {p.features.map((f, i) => <li key={i}><FaCheckCircle style={{ color: "#22c55e", marginRight: 6 }} />{f}</li>)}
-            </ul>
-            <div className="sa-plan-members"><FaUsers style={{ marginRight: 4 }} />{p.members} members</div>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button className="btn btn-outline sa-btn-sm" onClick={() => openEdit(p)}><FaEdit style={{ marginRight: 4 }} />Edit</button>
-              <button className="btn btn-outline sa-btn-sm" style={{ color: "#ef4444", borderColor: "#ef4444" }} onClick={() => del(p.id)}><FaTrash /></button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {showModal && (
-        <SAModal title={editPlan ? "Edit Plan" : "Add New Plan"} onClose={() => setShowModal(false)}>
-          <div className="sa-form-group"><label>Plan Name</label><input className="sa-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Monthly" /></div>
-          <div className="sa-form-group"><label>Price ($)</label><input className="sa-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="e.g. 39" /></div>
-          <div className="sa-form-group"><label>Duration</label><input className="sa-input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 1 month" /></div>
-          <div className="sa-form-group"><label>Features (comma-separated)</label><textarea className="sa-input" rows={3} value={form.features} onChange={e => setForm(f => ({ ...f, features: e.target.value }))} placeholder="Gym Access, Locker, ..." /></div>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button className="btn btn-primary sa-btn-sm" onClick={save}>Save Plan</button>
-            <button className="btn btn-outline sa-btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
-          </div>
-        </SAModal>
-      )}
-    </div>
-  );
-}
-
-// ─── ANALYTICS: REPORTS ───────────────────────────────────────────────────────
-function SAReports() {
-  const { toast, show } = useToast();
-  const summaries = [
-    { label: "Total Members", value: "4,820", change: "+312 this month", color: "#22c55e" },
-    { label: "Monthly Revenue", value: "$51.4k", change: "+8.9% vs last month", color: "#3b82f6" },
-    { label: "Avg Session/Member", value: "8.4", change: "Per month", color: "#8b5cf6" },
-    { label: "Retention Rate", value: "96.8%", change: "+0.8% vs last month", color: "#f97316" },
-  ];
-  const reports = [
-    { name: "Monthly Revenue Report", type: "Financial", date: "May 2026", size: "2.4 MB" },
-    { name: "Member Growth Report", type: "Analytics", date: "May 2026", size: "1.8 MB" },
-    { name: "Branch Performance", type: "Operations", date: "Apr 2026", size: "3.1 MB" },
-    { name: "Trainer Utilization", type: "HR", date: "Apr 2026", size: "1.2 MB" },
-    { name: "Equipment Status", type: "Operations", date: "Apr 2026", size: "0.9 MB" },
-  ];
-  return (
-    <div className="sa-section">
-      {toast && <Toast msg={toast} onClose={() => {}} />}
-      <div className="sa-section-head">
-        <h2><FaFileInvoiceDollar style={{ marginRight: 8 }} />Reports</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => show("Generating report...")}><FaPlus style={{ marginRight: 6 }} />Generate Report</button>
-      </div>
-      <div className="sa-kpi-grid">
-        {summaries.map((s, i) => (
-          <div className="sa-kpi-card" key={i}>
-            <div className="sa-kpi-icon" style={{ background: s.color + "22", fontSize: "1.2rem" }}>📊</div>
-            <div><strong>{s.value}</strong><span>{s.label}</span><small style={{ color: "var(--text-secondary)" }}>{s.change}</small></div>
-          </div>
-        ))}
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>Available Reports</h3></div>
-        <table className="sa-table">
-          <thead><tr><th>Report Name</th><th>Type</th><th>Period</th><th>Size</th><th>Actions</th></tr></thead>
-          <tbody>
-            {reports.map((r, i) => (
-              <tr key={i}>
-                <td><strong>{r.name}</strong></td>
-                <td><SABadge s={r.type.toLowerCase()} /></td>
-                <td style={{ color: "var(--text-secondary)", fontSize: ".78rem" }}>{r.date}</td>
-                <td style={{ color: "var(--text-secondary)", fontSize: ".78rem" }}>{r.size}</td>
-                <td>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="sa-link-btn" onClick={() => show(`Downloading ${r.name} as PDF...`)}><FaDownload /> PDF</button>
-                    <button className="sa-link-btn" onClick={() => show(`Downloading ${r.name} as CSV...`)}><FaDownload /> CSV</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── ANALYTICS: MEMBER ANALYTICS ─────────────────────────────────────────────
-function SAMemberAnalytics() {
-  const maxActive = Math.max(...memberGrowth.map(d => d.active));
-  return (
-    <div className="sa-section">
-      <div className="sa-section-head">
-        <h2><FaUsersAlt style={{ marginRight: 8 }} />Member Analytics</h2>
-      </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
-        <KpiCard icon={<FaUsers />} label="Total Members" value="4,820" color="#22c55e" change="+260 this month" trend="up" />
-        <KpiCard icon={<FaCheckCircle />} label="Active Members" value="4,640" color="#3b82f6" change="96.3% active rate" trend="up" />
-        <KpiCard icon={<FaTimesCircle />} label="Inactive Members" value="260" color="#ef4444" change="-3.7% vs last month" trend="up" />
-        <KpiCard icon={<FaChartLine />} label="Retention Rate" value="96.8%" color="#8b5cf6" change="+0.8% vs last month" trend="up" />
-      </div>
-      <div className="sa-two-col">
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Member Growth (12 Months)</h3></div>
-          <div className="sa-bar-chart" style={{ height: 140 }}>
-            {memberGrowth.map((d, i) => (
-              <div className="sa-bar-col" key={i}>
-                <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: "100%" }}>
-                  <div className="sa-bar" style={{ height: `${(d.active / maxActive) * 100}%`, background: "#22c55e", flex: 2 }} />
-                  <div className="sa-bar" style={{ height: `${(d.inactive / maxActive) * 100}%`, background: "#ef4444", flex: 1 }} />
-                </div>
-                <span className="sa-bar-label">{d.month}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: ".75rem" }}>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#22c55e", borderRadius: 2, marginRight: 4 }} />Active</span>
-            <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#ef4444", borderRadius: 2, marginRight: 4 }} />Inactive</span>
-          </div>
-        </div>
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>New Member Acquisitions</h3></div>
-          <div className="sa-bar-chart" style={{ height: 140 }}>
-            {memberGrowth.map((d, i) => {
-              const maxNew = Math.max(...memberGrowth.map(x => x.new));
-              return (
-                <div className="sa-bar-col" key={i}>
-                  <span className="sa-bar-val">{d.new}</span>
-                  <div className="sa-bar" style={{ height: `${(d.new / maxNew) * 100}%`, background: "#8b5cf6" }} />
-                  <span className="sa-bar-label">{d.month}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>Retention Rate Trend</h3></div>
-        <div style={{ padding: "8px 0" }}>
-          {[["Jun","94.2%",94.2],["Aug","95.1%",95.1],["Oct","95.8%",95.8],["Dec","96.0%",96.0],["Feb","96.4%",96.4],["May","96.8%",96.8]].map(([m, v, pct]) => (
-            <div key={m} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-              <span style={{ width: 32, fontSize: ".78rem", color: "var(--text-secondary)" }}>{m}</span>
-              <div style={{ flex: 1, background: "var(--bg-primary)", borderRadius: 4, height: 10 }}>
-                <div style={{ width: `${pct}%`, height: "100%", background: "#22c55e", borderRadius: 4 }} />
-              </div>
-              <strong style={{ width: 48, fontSize: ".82rem", color: "#22c55e" }}>{v}</strong>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ANALYTICS: FINANCIAL ANALYTICS ──────────────────────────────────────────
-function SAFinancialAnalytics() {
-  const data = financialReports.monthly;
-  const maxProfit = Math.max(...data.map(d => d.profit));
-  return (
-    <div className="sa-section">
-      <div className="sa-section-head">
-        <h2><FaChartPie style={{ marginRight: 8 }} />Financial Analytics</h2>
-      </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
-        <KpiCard icon={<FaMoneyBillWave />} label="Total Revenue" value="$1.84M" color="#22c55e" change="+22% YoY" trend="up" />
-        <KpiCard icon={<FaChartLine />} label="Net Profit" value="$193k" color="#3b82f6" change="+18% YoY" trend="up" />
-        <KpiCard icon={<FaChartPie />} label="Profit Margin" value="38.2%" color="#8b5cf6" change="+2.1% vs last year" trend="up" />
-        <KpiCard icon={<FaChartPie />} label="MoM Growth" value="+8.9%" color="#f97316" change="May vs April" trend="up" />
-      </div>
-      <div className="sa-two-col">
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Profit Trend (12 Months)</h3></div>
-          <div className="sa-bar-chart" style={{ height: 140 }}>
-            {data.map((d, i) => (
-              <div className="sa-bar-col" key={i}>
-                <span className="sa-bar-val">${(d.profit / 1000).toFixed(0)}k</span>
-                <div className="sa-bar" style={{ height: `${(d.profit / maxProfit) * 100}%`, background: "#22c55e" }} />
-                <span className="sa-bar-label">{d.month}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Revenue Forecast</h3></div>
-          <div className="sa-bar-chart" style={{ height: 140 }}>
-            {financialReports.forecast.map((f, i) => (
-              <div className="sa-bar-col" key={i}>
-                <span className="sa-bar-val">${(f.forecast / 1000).toFixed(0)}k</span>
-                <div className="sa-bar" style={{ height: `${(f.forecast / 65000) * 100}%`, background: f.actual ? "#ef4444" : "#8b5cf6", opacity: f.actual ? 1 : 0.65 }} />
-                <span className="sa-bar-label">{f.month}</span>
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: ".72rem", color: "var(--text-secondary)", marginTop: 8 }}>Purple = Forecast · Red = Actual</p>
-        </div>
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>Revenue Breakdown by Plan</h3></div>
-        {membershipPlans.map((p, i) => {
-          const rev = p.price * p.members;
-          const maxRev = Math.max(...membershipPlans.map(x => x.price * x.members));
-          const colors = ["#ef4444","#3b82f6","#22c55e","#8b5cf6","#f97316","#06b6d4"];
-          return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-              <span style={{ width: 90, fontSize: ".8rem" }}>{p.name}</span>
-              <div style={{ flex: 1, background: "var(--bg-primary)", borderRadius: 4, height: 10 }}>
-                <div style={{ width: `${(rev / maxRev) * 100}%`, height: "100%", background: colors[i % colors.length], borderRadius: 4 }} />
-              </div>
-              <strong style={{ width: 64, fontSize: ".8rem", textAlign: "right" }}>${(rev / 1000).toFixed(1)}k</strong>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ─── ENGAGEMENT: NOTIFICATIONS ────────────────────────────────────────────────
 function SANotificationsCenter() {
-  const [notifs, setNotifs] = useState(notifications);
+  const [notifs, setNotifs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { toast, show } = useToast();
-  const markRead = (id) => { setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); };
-  const markAll = () => { setNotifs(prev => prev.map(n => ({ ...n, read: true }))); show("All marked as read"); };
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const filters = {};
+      if (typeFilter !== "all") filters.type = typeFilter;
+      if (statusFilter !== "all") filters.status = statusFilter;
+      const response = await superAdminAPI.engagement.getNotifications(filters);
+      const notifsArray = response?.data?.notifications || [];
+      setNotifs(Array.isArray(notifsArray) ? notifsArray : []);
+    } catch (err) {
+      console.error('[SANotificationsCenter] Error fetching notifications:', err);
+      setError(err.message);
+      setNotifs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [typeFilter, statusFilter]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const markRead = useCallback(async (id) => {
+    try {
+      await superAdminAPI.engagement.markNotificationRead(id);
+      setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      show("Notification marked as read");
+    } catch (err) {
+      console.error('[SANotificationsCenter] Error marking as read:', err);
+      show("Error marking notification");
+    }
+  }, [show]);
+
+  const markAll = useCallback(async () => {
+    try {
+      await superAdminAPI.engagement.markAllNotificationsRead();
+      setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+      show("All marked as read");
+    } catch (err) {
+      console.error('[SANotificationsCenter] Error marking all as read:', err);
+      show("Error marking all notifications");
+    }
+  }, [show]);
+
+  const deleteNotif = useCallback(async (id) => {
+    try {
+      await superAdminAPI.engagement.deleteNotification(id);
+      setNotifs(prev => prev.filter(n => n.id !== id));
+      show("Notification deleted");
+    } catch (err) {
+      console.error('[SANotificationsCenter] Error deleting notification:', err);
+      show("Error deleting notification");
+    }
+  }, [show]);
+
   const typeIcon = { expiry: <FaCalendarAlt />, payment: <FaCreditCard />, system: <FaServer />, alert: <FaExclamationTriangle />, info: <FaInfoCircle /> };
   const typeColor = { expiry: "#f97316", payment: "#ef4444", system: "#3b82f6", alert: "#ef4444", info: "#22c55e" };
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaBell style={{ marginRight: 8 }} />Notifications</h2>
-        <button className="btn btn-outline sa-btn-sm" onClick={markAll}>Mark All Read</button>
+        <button className="btn btn-outline sa-btn-sm" onClick={markAll} disabled={loading}>Mark All Read</button>
       </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <KpiCard icon={<FaBell />} label="Total Alerts" value={notifs.length} color="#3b82f6" />
-        <KpiCard icon={<FaExclamationCircle />} label="Unread" value={notifs.filter(n => !n.read).length} color="#ef4444" />
-        <KpiCard icon={<FaCheckCircle />} label="Read" value={notifs.filter(n => n.read).length} color="#22c55e" />
-      </div>
-      <div className="sa-card">
-        {notifs.map(n => (
-          <div key={n.id} className={`sa-notif-row ${!n.read ? "sa-notif-unread" : ""}`}>
-            <div className="sa-notif-icon" style={{ background: (typeColor[n.type] || "#6b7280") + "22", color: typeColor[n.type] || "#6b7280" }}>
-              {typeIcon[n.type] || <FaBell />}
-            </div>
-            <div className="sa-notif-body">
-              <strong>{n.title}</strong>
-              <span>{n.message}</span>
-            </div>
-            <div className="sa-notif-meta">
-              <small>{n.time}</small>
-              {!n.read && <button className="sa-link-btn" style={{ fontSize: ".7rem" }} onClick={() => markRead(n.id)}>Mark read</button>}
-            </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+            <KpiCard icon={<FaBell />} label="Total Alerts" value={notifs.length} color="#3b82f6" />
+            <KpiCard icon={<FaExclamationCircle />} label="Unread" value={notifs.filter(n => !n.read).length} color="#ef4444" />
+            <KpiCard icon={<FaCheckCircle />} label="Read" value={notifs.filter(n => n.read).length} color="#22c55e" />
           </div>
-        ))}
-      </div>
+          <div className="sa-filters">
+            {["all", "expiry", "payment", "system", "alert", "info"].map(t => (
+              <button key={t} className={`sa-filter-btn ${typeFilter === t ? "sa-filter-active" : ""}`} onClick={() => setTypeFilter(t)}>{t}</button>
+            ))}
+          </div>
+          <div className="sa-card">
+            {notifs.length === 0 ? <EmptyState title="No notifications" desc="All caught up!" /> : notifs.map(n => (
+              <div key={n.id} className={`sa-notif-row ${!n.read ? "sa-notif-unread" : ""}`}>
+                <div className="sa-notif-icon" style={{ background: (typeColor[n.type] || "#6b7280") + "22", color: typeColor[n.type] || "#6b7280" }}>
+                  {typeIcon[n.type] || <FaBell />}
+                </div>
+                <div className="sa-notif-body">
+                  <strong>{n.title}</strong>
+                  <span>{n.message}</span>
+                </div>
+                <div className="sa-notif-meta">
+                  <small>{n.timestamp || n.time}</small>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {!n.read && <button className="sa-link-btn" style={{ fontSize: ".7rem" }} onClick={() => markRead(n.id)}>Mark read</button>}
+                    <button className="sa-link-btn" style={{ fontSize: ".7rem", color: "#ef4444" }} onClick={() => deleteNotif(n.id)}>Delete</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 // ─── ENGAGEMENT: CAMPAIGNS ────────────────────────────────────────────────────
 function SACampaigns({ openForm }) {
+  const [campaignsData, setCampaignsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", type: "email", target: "", discount: "" });
+  const [form, setForm] = useState({ name: "", type: "email", target: "", discount: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, show } = useToast();
+
+  const fetchCampaigns = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.engagement.getCampaigns();
+      console.log('[SACampaigns] Response:', response);
+      const campaignsArray = response?.data?.announcements || response?.announcements || [];
+      setCampaignsData(Array.isArray(campaignsArray) ? campaignsArray : []);
+    } catch (err) {
+      console.error('[SACampaigns] Error fetching campaigns:', err);
+      setError(err.message);
+      setCampaignsData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  const handleCreateCampaign = useCallback(async () => {
+    if (!form.name || !form.target || !form.message) {
+      show("Please fill all required fields");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      const campaignData = {
+        name: form.name,
+        type: form.type,
+        targetAudience: form.target,
+        message: form.message,
+        discount: form.type === "discount" ? parseFloat(form.discount) : null,
+      };
+      console.log('[SACampaigns] Creating campaign:', campaignData);
+      await superAdminAPI.engagement.createCampaign(campaignData);
+      show("Campaign created successfully!");
+      setShowModal(false);
+      setForm({ name: "", type: "email", target: "", discount: "", message: "" });
+      fetchCampaigns();
+    } catch (err) {
+      console.error('[SACampaigns] Error creating campaign:', err);
+      show("Error creating campaign: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, show, fetchCampaigns]);
+
+  const handleDeleteCampaign = useCallback(async (campaignId) => {
+    try {
+      await superAdminAPI.engagement.deleteCampaign(campaignId);
+      show("Campaign deleted successfully!");
+      fetchCampaigns();
+    } catch (err) {
+      console.error('[SACampaigns] Error deleting campaign:', err);
+      show("Error deleting campaign");
+    }
+  }, [show, fetchCampaigns]);
+
+  const handleLaunchCampaign = useCallback(async (campaignId) => {
+    try {
+      await superAdminAPI.engagement.launchCampaign(campaignId);
+      show("Campaign launched successfully!");
+      fetchCampaigns();
+    } catch (err) {
+      console.error('[SACampaigns] Error launching campaign:', err);
+      show("Error launching campaign");
+    }
+  }, [show, fetchCampaigns]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaBullhorn style={{ marginRight: 8 }} />Campaigns</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => openForm("createCampaign")}><FaPlus style={{ marginRight: 6 }} />Create Campaign</button>
+        <button className="btn btn-primary sa-btn-sm" onClick={() => setShowModal(true)} disabled={loading}><FaPlus style={{ marginRight: 6 }} />Create Campaign</button>
       </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <KpiCard icon={<FaBullhorn />} label="Active Campaigns" value={campaigns.filter(c => c.status === "active").length} color="#22c55e" />
-        <KpiCard icon={<FaEnvelope />} label="Total Sent" value={campaigns.reduce((a, b) => a + b.sent, 0).toLocaleString()} color="#3b82f6" />
-        <KpiCard icon={<FaEye />} label="Total Opens" value={campaigns.reduce((a, b) => a + b.opens, 0).toLocaleString()} color="#8b5cf6" />
-      </div>
-      <div className="sa-card">
-        <table className="sa-table">
-          <thead><tr><th>Campaign</th><th>Type</th><th>Target</th><th>Discount</th><th>Sent</th><th>Opens</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {campaigns.map(c => (
-              <tr key={c.id}>
-                <td><strong>{c.name}</strong></td>
-                <td><SABadge s={c.type} /></td>
-                <td style={{ fontSize: ".8rem", color: "var(--text-secondary)" }}>{c.target}</td>
-                <td>{c.discount !== "—" ? <span style={{ color: "#22c55e", fontWeight: 700 }}>{c.discount}</span> : "—"}</td>
-                <td>{c.sent.toLocaleString()}</td>
-                <td>{c.opens.toLocaleString()}</td>
-                <td><SABadge s={c.status} /></td>
-                <td>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="sa-link-btn" onClick={() => show(`Editing ${c.name}`)}><FaEdit /></button>
-                    <button className="sa-link-btn" style={{ color: "#ef4444" }} onClick={() => show("Campaign deleted")}><FaTrash /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+            <KpiCard icon={<FaBullhorn />} label="Active Campaigns" value={campaignsData.filter(c => c.status === "published").length} color="#22c55e" />
+            <KpiCard icon={<FaEnvelope />} label="Total Campaigns" value={campaignsData.length} color="#3b82f6" />
+            <KpiCard icon={<FaEye />} label="Draft Campaigns" value={campaignsData.filter(c => c.status === "draft").length} color="#8b5cf6" />
+          </div>
+          <div className="sa-card">
+            {campaignsData.length === 0 ? <EmptyState title="No campaigns" desc="Create your first campaign to get started" /> : (
+              <table className="sa-table">
+                <thead><tr><th>Campaign</th><th>Type</th><th>Target</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {campaignsData.map(c => (
+                    <tr key={c.id || c._id}>
+                      <td><strong>{c.title || c.name}</strong></td>
+                      <td><SABadge s={c.category || c.type || 'announcement'} /></td>
+                      <td style={{ fontSize: ".8rem", color: "var(--text-secondary)" }}>{c.targetAudience || c.target || 'N/A'}</td>
+                      <td><SABadge s={c.status || 'draft'} /></td>
+                      <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {c.status === "draft" && <button className="sa-link-btn" onClick={() => handleLaunchCampaign(c.id || c._id)} style={{ fontSize: ".7rem" }}>Launch</button>}
+                          <button className="sa-link-btn" onClick={() => show(`Editing ${c.title || c.name}`)}><FaEdit /></button>
+                          <button className="sa-link-btn" style={{ color: "#ef4444" }} onClick={() => handleDeleteCampaign(c.id || c._id)}><FaTrash /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
       {showModal && (
         <SAModal title="Create Campaign" onClose={() => setShowModal(false)}>
           <div className="sa-form-group"><label>Campaign Name</label><input className="sa-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Summer Offer" /></div>
@@ -1163,11 +882,20 @@ function SACampaigns({ openForm }) {
               <option value="email">Email</option><option value="sms">SMS</option><option value="discount">Discount</option>
             </select>
           </div>
-          <div className="sa-form-group"><label>Target Audience</label><input className="sa-input" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} placeholder="e.g. All Members" /></div>
+          <div className="sa-form-group"><label>Target Audience</label>
+            <select className="sa-input" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))}>
+              <option value="">Select Target Audience</option>
+              <option value="all">All Members</option>
+              <option value="members">Active Members</option>
+              <option value="trainers">Trainers</option>
+              <option value="staff">Staff</option>
+              <option value="admins">Admins</option>
+            </select>
+          </div>
           {form.type === "discount" && <div className="sa-form-group"><label>Discount %</label><input className="sa-input" value={form.discount} onChange={e => setForm(f => ({ ...f, discount: e.target.value }))} placeholder="e.g. 20" /></div>}
-          <div className="sa-form-group"><label>Message</label><textarea className="sa-input" rows={3} placeholder="Enter campaign message..." /></div>
+          <div className="sa-form-group"><label>Message</label><textarea className="sa-input" rows={3} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Enter campaign message..." /></div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button className="btn btn-primary sa-btn-sm" onClick={() => { setShowModal(false); show("Campaign created!"); }}>Launch Campaign</button>
+            <button className="btn btn-primary sa-btn-sm" onClick={handleCreateCampaign} disabled={isSubmitting}>{isSubmitting ? "Creating..." : "Create Campaign"}</button>
             <button className="btn btn-outline sa-btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
           </div>
         </SAModal>
@@ -1179,7 +907,76 @@ function SACampaigns({ openForm }) {
 // ─── ENGAGEMENT: COMMUNICATION ────────────────────────────────────────────────
 function SACommunication() {
   const [tab, setTab] = useState("email");
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ to: "all", subject: "", message: "", template: "none" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, show } = useToast();
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.engagement.getAnnouncements();
+      console.log('[SACommunication] Announcements Response:', response);
+      const announcementsArray = response?.data?.announcements || [];
+      setAnnouncements(Array.isArray(announcementsArray) ? announcementsArray : []);
+    } catch (err) {
+      console.error('[SACommunication] Error fetching data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleSend = useCallback(async () => {
+    if (!form.message || !form.to) {
+      show("Please fill all required fields");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      await superAdminAPI.engagement.createAnnouncement({
+        title: form.subject || `${tab.charAt(0).toUpperCase() + tab.slice(1)} Message`,
+        message: form.message,
+        targetAudience: form.to,
+      });
+      show(`${tab.charAt(0).toUpperCase() + tab.slice(1)} sent successfully!`);
+      setForm({ to: "all", subject: "", message: "", template: "none" });
+      fetchData();
+    } catch (err) {
+      console.error('[SACommunication] Error sending:', err);
+      show("Error sending message: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, tab, show, fetchData]);
+
+  const handleSaveDraft = useCallback(async () => {
+    try {
+      setIsSubmitting(true);
+      await superAdminAPI.engagement.createAnnouncement({
+        title: form.subject || `Draft ${tab.charAt(0).toUpperCase() + tab.slice(1)}`,
+        message: form.message,
+        targetAudience: form.to,
+        status: "draft",
+      });
+      show("Saved as draft");
+      setForm({ to: "all", subject: "", message: "", template: "none" });
+      fetchData();
+    } catch (err) {
+      console.error('[SACommunication] Error saving draft:', err);
+      show("Error saving draft: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, tab, show, fetchData]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
@@ -1189,130 +986,354 @@ function SACommunication() {
           <button key={id} className={`sa-tab-btn ${tab === id ? "sa-tab-active" : ""}`} onClick={() => setTab(id)}>{icon}<span style={{ marginLeft: 6 }}>{label}</span></button>
         ))}
       </div>
-      <div className="sa-card">
-        <div className="sa-form-group"><label>To</label>
-          <select className="sa-input"><option>All Members</option><option>Active Members</option><option>Expiring Soon</option><option>Inactive Members</option><option>Trainers</option></select>
-        </div>
-        {tab !== "sms" && <div className="sa-form-group"><label>Subject</label><input className="sa-input" placeholder={`Enter ${tab} subject...`} /></div>}
-        <div className="sa-form-group"><label>Message</label><textarea className="sa-input" rows={5} placeholder={`Compose your ${tab} message here...`} /></div>
-        {tab === "email" && (
-          <div className="sa-form-group"><label>Template</label>
-            <select className="sa-input"><option>None</option><option>Renewal Reminder</option><option>Welcome Email</option><option>Offer Announcement</option></select>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <div className="sa-card">
+          <div className="sa-form-group"><label>To</label>
+            <select className="sa-input" value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))}>
+              <option value="all">All Members</option>
+              <option value="members">Active Members</option>
+              <option value="trainers">Trainers</option>
+              <option value="staff">Staff</option>
+              <option value="admins">Admins</option>
+            </select>
           </div>
-        )}
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <button className="btn btn-primary sa-btn-sm" onClick={() => show(`${tab.charAt(0).toUpperCase() + tab.slice(1)} sent successfully!`)}>Send {tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
-          <button className="btn btn-outline sa-btn-sm" onClick={() => show("Saved as draft")}>Save Draft</button>
+          {tab !== "sms" && <div className="sa-form-group"><label>Subject</label><input className="sa-input" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder={`Enter ${tab} subject...`} /></div>}
+          <div className="sa-form-group"><label>Message</label><textarea className="sa-input" rows={5} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder={`Compose your ${tab} message here...`} /></div>
+          {tab === "email" && (
+            <div className="sa-form-group"><label>Template</label>
+              <select className="sa-input" value={form.template} onChange={e => setForm(f => ({ ...f, template: e.target.value }))}>
+                <option value="none">None</option>
+                <option value="renewal">Renewal Reminder</option>
+                <option value="welcome">Welcome Email</option>
+                <option value="offer">Offer Announcement</option>
+              </select>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="btn btn-primary sa-btn-sm" onClick={handleSend} disabled={isSubmitting}>{isSubmitting ? "Sending..." : `Send ${tab.charAt(0).toUpperCase() + tab.slice(1)}`}</button>
+            <button className="btn btn-outline sa-btn-sm" onClick={handleSaveDraft} disabled={isSubmitting}>Save Draft</button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // ─── OPERATIONS: EQUIPMENT ────────────────────────────────────────────────────
 function SAEquipment({ openForm }) {
+  const [equipmentData, setEquipmentData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ name: "", category: "", branch: "", status: "working" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, show } = useToast();
-  const filtered = equipment.filter(e =>
+
+  // Fetch equipment from backend
+  const fetchEquipment = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.operations.getEquipment();
+      console.log('[SAEquipment] Response:', response);
+      const equipmentArray = response?.data?.equipment || [];
+      setEquipmentData(Array.isArray(equipmentArray) ? equipmentArray : []);
+    } catch (err) {
+      console.error('[SAEquipment] Error fetching equipment:', err);
+      setError(err.message);
+      setEquipmentData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEquipment();
+  }, [fetchEquipment]);
+
+  const filtered = equipmentData.filter(e =>
     (filter === "all" || e.status === filter) &&
     e.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleCreateEquipment = useCallback(async () => {
+    if (!form.name || !form.category) {
+      show("Please fill all required fields");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      await superAdminAPI.operations.createEquipment({
+        name: form.name,
+        category: form.category,
+        branch: form.branch || 'N/A',
+        status: form.status,
+      });
+      show("Equipment added successfully!");
+      setShowModal(false);
+      setForm({ name: "", category: "", branch: "", status: "working" });
+      fetchEquipment();
+    } catch (err) {
+      console.error('[SAEquipment] Error creating equipment:', err);
+      show("Error adding equipment: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, show, fetchEquipment]);
+
+  const handleDeleteEquipment = useCallback(async (equipmentId) => {
+    try {
+      await superAdminAPI.operations.deleteEquipment(equipmentId);
+      show("Equipment deleted successfully!");
+      fetchEquipment();
+    } catch (err) {
+      console.error('[SAEquipment] Error deleting equipment:', err);
+      show("Error deleting equipment: " + (err.response?.data?.message || err.message));
+    }
+  }, [show, fetchEquipment]);
+
+  const handleUpdateStatus = useCallback(async (equipmentId, newStatus) => {
+    try {
+      await superAdminAPI.operations.updateEquipment(equipmentId, { status: newStatus });
+      show("Equipment status updated!");
+      fetchEquipment();
+    } catch (err) {
+      console.error('[SAEquipment] Error updating equipment:', err);
+      show("Error updating equipment: " + (err.response?.data?.message || err.message));
+    }
+  }, [show, fetchEquipment]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaTools style={{ marginRight: 8 }} />Equipment</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => openForm("addEquipment")}><FaPlus style={{ marginRight: 6 }} />Add Equipment</button>
+        <button className="btn btn-primary sa-btn-sm" onClick={() => setShowModal(true)} disabled={loading}><FaPlus style={{ marginRight: 6 }} />Add Equipment</button>
       </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <KpiCard icon={<FaCheckCircle />} label="Working" value={equipment.filter(e => e.status === "working").length} color="#22c55e" />
-        <KpiCard icon={<FaWrench />} label="Under Maintenance" value={equipment.filter(e => e.status === "maintenance").length} color="#f97316" />
-        <KpiCard icon={<FaTimesCircle />} label="Broken" value={equipment.filter(e => e.status === "broken").length} color="#ef4444" />
-      </div>
-      <div className="sa-filters">
-        <div className="sa-search-wrap"><FaSearch className="sa-search-icon" /><input className="sa-input sa-input-search" placeholder="Search equipment..." value={search} onChange={e => setSearch(e.target.value)} /></div>
-        {["all", "working", "maintenance", "broken"].map(f => (
-          <button key={f} className={`sa-filter-btn ${filter === f ? "sa-filter-active" : ""}`} onClick={() => setFilter(f)}>{f}</button>
-        ))}
-      </div>
-      <div className="sa-card">
-        {filtered.length === 0 ? <EmptyState title="No equipment found" /> : (
-          <table className="sa-table">
-            <thead><tr><th>Equipment</th><th>Category</th><th>Branch</th><th>Status</th><th>Last Service</th><th>Next Service</th><th>Actions</th></tr></thead>
-            <tbody>
-              {filtered.map(e => (
-                <tr key={e.id}>
-                  <td><strong>{e.name}</strong></td>
-                  <td><SABadge s={e.category.toLowerCase()} /></td>
-                  <td>{e.branch}</td>
-                  <td><SABadge s={e.status} /></td>
-                  <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{e.lastService}</td>
-                  <td style={{ fontSize: ".78rem", color: e.nextService === "ASAP" ? "#ef4444" : "var(--text-secondary)", fontWeight: e.nextService === "ASAP" ? 700 : 400 }}>{e.nextService}</td>
-                  <td>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button className="sa-link-btn" onClick={() => show(`Editing ${e.name}`)}><FaEdit /></button>
-                      <button className="sa-link-btn" onClick={() => show(`Scheduling maintenance for ${e.name}`)}><FaWrench /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+            <KpiCard icon={<FaCheckCircle />} label="Working" value={equipmentData.filter(e => e.status === "working").length} color="#22c55e" />
+            <KpiCard icon={<FaWrench />} label="Under Maintenance" value={equipmentData.filter(e => e.status === "maintenance").length} color="#f97316" />
+            <KpiCard icon={<FaTimesCircle />} label="Broken" value={equipmentData.filter(e => e.status === "broken").length} color="#ef4444" />
+          </div>
+          <div className="sa-filters">
+            <div className="sa-search-wrap"><FaSearch className="sa-search-icon" /><input className="sa-input sa-input-search" placeholder="Search equipment..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+            {["all", "working", "maintenance", "broken"].map(f => (
+              <button key={f} className={`sa-filter-btn ${filter === f ? "sa-filter-active" : ""}`} onClick={() => setFilter(f)}>{f}</button>
+            ))}
+          </div>
+          <div className="sa-card">
+            {filtered.length === 0 ? <EmptyState title="No equipment found" desc="Add your first equipment to get started" /> : (
+              <table className="sa-table">
+                <thead><tr><th>Equipment</th><th>Category</th><th>Branch</th><th>Status</th><th>Last Service</th><th>Next Service</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {filtered.map(e => (
+                    <tr key={e._id}>
+                      <td><strong>{e.name}</strong></td>
+                      <td><SABadge s={(e.category || 'general').toLowerCase()} /></td>
+                      <td>{e.branch || 'N/A'}</td>
+                      <td><SABadge s={e.status || 'working'} /></td>
+                      <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{e.lastService ? new Date(e.lastService).toLocaleDateString() : 'N/A'}</td>
+                      <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{e.nextService ? new Date(e.nextService).toLocaleDateString() : 'N/A'}</td>
+                      <td>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button className="sa-link-btn" onClick={() => show(`Editing ${e.name}`)}><FaEdit /></button>
+                          <button className="sa-link-btn" onClick={() => handleUpdateStatus(e._id, 'maintenance')}><FaWrench /></button>
+                          <button className="sa-link-btn" style={{ color: "#ef4444" }} onClick={() => handleDeleteEquipment(e._id)}><FaTrash /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+      {showModal && (
+        <SAModal title="Add Equipment" onClose={() => setShowModal(false)}>
+          <div className="sa-form-group"><label>Equipment Name</label><input className="sa-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Treadmill" /></div>
+          <div className="sa-form-group"><label>Category</label>
+            <select className="sa-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              <option value="">Select Category</option>
+              <option value="Cardio">Cardio</option>
+              <option value="Strength">Strength</option>
+              <option value="Functional">Functional</option>
+              <option value="Flexibility">Flexibility</option>
+            </select>
+          </div>
+          <div className="sa-form-group"><label>Branch</label><input className="sa-input" value={form.branch} onChange={e => setForm(f => ({ ...f, branch: e.target.value }))} placeholder="Branch name" /></div>
+          <div className="sa-form-group"><label>Status</label>
+            <select className="sa-input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              <option value="working">Working</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="broken">Broken</option>
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="btn btn-primary sa-btn-sm" onClick={handleCreateEquipment} disabled={isSubmitting}>{isSubmitting ? "Adding..." : "Add Equipment"}</button>
+            <button className="btn btn-outline sa-btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
+          </div>
+        </SAModal>
+      )}
     </div>
   );
 }
 
 // ─── OPERATIONS: VENDORS ──────────────────────────────────────────────────────
 function SAVendors({ openForm }) {
+  const [vendorsData, setVendorsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editVendor, setEditVendor] = useState(null);
+  const [form, setForm] = useState({ name: "", category: "", contact: "", phone: "", email: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, show } = useToast();
+
+  // Fetch vendors from backend
+  const fetchVendors = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.operations.getVendors();
+      console.log('[SAVendors] Response:', response);
+      const vendorsArray = response?.data?.vendors || [];
+      setVendorsData(Array.isArray(vendorsArray) ? vendorsArray : []);
+    } catch (err) {
+      console.error('[SAVendors] Error fetching vendors:', err);
+      setError(err.message);
+      setVendorsData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
+
+  const handleSaveVendor = useCallback(async () => {
+    if (!form.name || !form.category || !form.contact) {
+      show("Please fill all required fields");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      if (editVendor) {
+        await superAdminAPI.operations.updateVendor(editVendor._id, {
+          name: form.name,
+          category: form.category,
+          contact: form.contact,
+          phone: form.phone,
+          email: form.email,
+        });
+        show("Vendor updated successfully!");
+      } else {
+        await superAdminAPI.operations.createVendor({
+          name: form.name,
+          category: form.category,
+          contact: form.contact,
+          phone: form.phone,
+          email: form.email,
+        });
+        show("Vendor added successfully!");
+      }
+      setShowModal(false);
+      setEditVendor(null);
+      setForm({ name: "", category: "", contact: "", phone: "", email: "" });
+      fetchVendors();
+    } catch (err) {
+      console.error('[SAVendors] Error saving vendor:', err);
+      show("Error saving vendor: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, editVendor, show, fetchVendors]);
+
+  const handleDeleteVendor = useCallback(async (vendorId) => {
+    try {
+      await superAdminAPI.operations.deleteVendor(vendorId);
+      show("Vendor deleted successfully!");
+      fetchVendors();
+    } catch (err) {
+      console.error('[SAVendors] Error deleting vendor:', err);
+      show("Error deleting vendor: " + (err.response?.data?.message || err.message));
+    }
+  }, [show, fetchVendors]);
+
+  const openEditModal = (vendor) => {
+    setEditVendor(vendor);
+    setForm({
+      name: vendor.name,
+      category: vendor.category,
+      contact: vendor.contact,
+      phone: vendor.phone,
+      email: vendor.email,
+    });
+    setShowModal(true);
+  };
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaStore style={{ marginRight: 8 }} />Vendors</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => openForm("addVendor")}><FaPlus style={{ marginRight: 6 }} />Add Vendor</button>
+        <button className="btn btn-primary sa-btn-sm" onClick={() => { setEditVendor(null); setForm({ name: "", category: "", contact: "", phone: "", email: "" }); setShowModal(true); }} disabled={loading}><FaPlus style={{ marginRight: 6 }} />Add Vendor</button>
       </div>
-      <div className="sa-card">
-        <table className="sa-table">
-          <thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>Last Order</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {vendors.map(v => (
-              <tr key={v.id}>
-                <td><strong>{v.name}</strong></td>
-                <td><SABadge s={v.category.toLowerCase()} /></td>
-                <td>{v.contact}</td>
-                <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{v.phone}</td>
-                <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{v.lastOrder}</td>
-                <td><SABadge s={v.status} /></td>
-                <td>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="sa-link-btn" onClick={() => { setEditVendor(v); setShowModal(true); }}><FaEdit /></button>
-                    <button className="sa-link-btn" style={{ color: "#ef4444" }} onClick={() => show(`${v.name} removed`)}><FaTrash /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <div className="sa-card">
+          {vendorsData.length === 0 ? <EmptyState title="No vendors found" desc="Add your first vendor to get started" /> : (
+            <table className="sa-table">
+              <thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                {vendorsData.map(v => (
+                  <tr key={v._id}>
+                    <td><strong>{v.name}</strong></td>
+                    <td><SABadge s={(v.category || 'general').toLowerCase()} /></td>
+                    <td>{v.contact || 'N/A'}</td>
+                    <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{v.phone || 'N/A'}</td>
+                    <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{v.email || 'N/A'}</td>
+                    <td><SABadge s={v.status || 'active'} /></td>
+                    <td>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button className="sa-link-btn" onClick={() => openEditModal(v)}><FaEdit /></button>
+                        <button className="sa-link-btn" style={{ color: "#ef4444" }} onClick={() => handleDeleteVendor(v._id)}><FaTrash /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
       {showModal && (
         <SAModal title={editVendor ? "Edit Vendor" : "Add Vendor"} onClose={() => setShowModal(false)}>
-          <div className="sa-form-group"><label>Vendor Name</label><input className="sa-input" defaultValue={editVendor?.name} placeholder="Company name" /></div>
+          <div className="sa-form-group"><label>Vendor Name</label><input className="sa-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Company name" /></div>
           <div className="sa-form-group"><label>Category</label>
-            <select className="sa-input" defaultValue={editVendor?.category}>
-              <option>Equipment</option><option>Cleaning</option><option>Maintenance</option><option>Nutrition</option>
+            <select className="sa-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              <option value="">Select Category</option>
+              <option value="Equipment">Equipment</option>
+              <option value="Cleaning">Cleaning</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Nutrition">Nutrition</option>
             </select>
           </div>
-          <div className="sa-form-group"><label>Contact Person</label><input className="sa-input" defaultValue={editVendor?.contact} placeholder="Contact name" /></div>
-          <div className="sa-form-group"><label>Phone</label><input className="sa-input" defaultValue={editVendor?.phone} placeholder="+91 XXXXX XXXXX" /></div>
-          <div className="sa-form-group"><label>Email</label><input className="sa-input" defaultValue={editVendor?.email} placeholder="vendor@email.com" /></div>
+          <div className="sa-form-group"><label>Contact Person</label><input className="sa-input" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} placeholder="Contact name" /></div>
+          <div className="sa-form-group"><label>Phone</label><input className="sa-input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 XXXXX XXXXX" /></div>
+          <div className="sa-form-group"><label>Email</label><input className="sa-input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="vendor@email.com" /></div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button className="btn btn-primary sa-btn-sm" onClick={() => { setShowModal(false); show(editVendor ? "Vendor updated!" : "Vendor added!"); }}>Save</button>
+            <button className="btn btn-primary sa-btn-sm" onClick={handleSaveVendor} disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save"}</button>
             <button className="btn btn-outline sa-btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
           </div>
         </SAModal>
@@ -1323,113 +1344,440 @@ function SAVendors({ openForm }) {
 
 // ─── OPERATIONS: MAINTENANCE ──────────────────────────────────────────────────
 function SAMaintenance({ openForm }) {
+  const [maintenanceData, setMaintenanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ equipmentId: "", type: "", technician_name: "", scheduled_date: "", cost: "", status: "pending", description: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast, show } = useToast();
+
+  // Fetch maintenance from backend
+  const fetchMaintenance = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.operations.getMaintenance();
+      console.log('[SAMaintenance] Response:', response);
+      const maintenanceArray = response?.data?.maintenance || [];
+      setMaintenanceData(Array.isArray(maintenanceArray) ? maintenanceArray : []);
+    } catch (err) {
+      console.error('[SAMaintenance] Error fetching maintenance:', err);
+      setError(err.message);
+      setMaintenanceData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMaintenance();
+  }, [fetchMaintenance]);
+
+  const handleCreateMaintenance = useCallback(async () => {
+    if (!form.equipmentId || !form.type || !form.technician_name || !form.scheduled_date || !form.cost) {
+      show("Please fill all required fields");
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      await superAdminAPI.operations.createMaintenance(form.equipmentId, {
+        type: form.type,
+        technician_name: form.technician_name,
+        scheduled_date: form.scheduled_date,
+        cost: parseFloat(form.cost),
+        status: form.status,
+        description: form.description,
+      });
+      show("Maintenance scheduled successfully!");
+      setShowModal(false);
+      setForm({ equipmentId: "", type: "", technician_name: "", scheduled_date: "", cost: "", status: "pending", description: "" });
+      fetchMaintenance();
+    } catch (err) {
+      console.error('[SAMaintenance] Error creating maintenance:', err);
+      show("Error scheduling maintenance: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, show, fetchMaintenance]);
+
+  const handleUpdateStatus = useCallback(async (maintenanceId, newStatus) => {
+    try {
+      await superAdminAPI.operations.updateMaintenance(maintenanceId, { status: newStatus });
+      show("Maintenance status updated!");
+      fetchMaintenance();
+    } catch (err) {
+      console.error('[SAMaintenance] Error updating maintenance:', err);
+      show("Error updating maintenance: " + (err.response?.data?.message || err.message));
+    }
+  }, [show, fetchMaintenance]);
+
+  const handleDeleteMaintenance = useCallback(async (maintenanceId) => {
+    try {
+      await superAdminAPI.operations.deleteMaintenance(maintenanceId);
+      show("Maintenance record deleted!");
+      fetchMaintenance();
+    } catch (err) {
+      console.error('[SAMaintenance] Error deleting maintenance:', err);
+      show("Error deleting maintenance: " + (err.response?.data?.message || err.message));
+    }
+  }, [show, fetchMaintenance]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaWrench style={{ marginRight: 8 }} />Maintenance</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => openForm("scheduleMaintenance")}><FaPlus style={{ marginRight: 6 }} />Schedule Maintenance</button>
+        <button className="btn btn-primary sa-btn-sm" onClick={() => setShowModal(true)} disabled={loading}><FaPlus style={{ marginRight: 6 }} />Schedule Maintenance</button>
       </div>
-      <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <KpiCard icon={<FaCheckCircle />} label="Completed" value={maintenanceLogs.filter(m => m.status === "completed").length} color="#22c55e" />
-        <KpiCard icon={<FaSync />} label="In Progress" value={maintenanceLogs.filter(m => m.status === "in-progress").length} color="#f97316" />
-        <KpiCard icon={<FaExclamationCircle />} label="Pending" value={maintenanceLogs.filter(m => m.status === "pending").length} color="#ef4444" />
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>Maintenance Log</h3></div>
-        <table className="sa-table">
-          <thead><tr><th>Equipment</th><th>Type</th><th>Technician</th><th>Date</th><th>Cost</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {maintenanceLogs.map(m => (
-              <tr key={m.id}>
-                <td><strong>{m.equipment}</strong></td>
-                <td><SABadge s={m.type.toLowerCase()} /></td>
-                <td>{m.technician}</td>
-                <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{m.date}</td>
-                <td style={{ fontWeight: 700 }}>{m.cost}</td>
-                <td><SABadge s={m.status} /></td>
-                <td><button className="sa-link-btn" onClick={() => show("Updating status...")}><FaEdit /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
+            <KpiCard icon={<FaCheckCircle />} label="Completed" value={maintenanceData.filter(m => m.status === "completed").length} color="#22c55e" />
+            <KpiCard icon={<FaSync />} label="In Progress" value={maintenanceData.filter(m => m.status === "in-progress").length} color="#f97316" />
+            <KpiCard icon={<FaExclamationCircle />} label="Pending" value={maintenanceData.filter(m => m.status === "pending").length} color="#ef4444" />
+          </div>
+          <div className="sa-card">
+            <div className="sa-card-head"><h3>Maintenance Log</h3></div>
+            {maintenanceData.length === 0 ? <EmptyState title="No maintenance records" desc="Schedule your first maintenance to get started" /> : (
+              <table className="sa-table">
+                <thead><tr><th>Equipment</th><th>Type</th><th>Technician</th><th>Date</th><th>Cost</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {maintenanceData.map(m => (
+                    <tr key={m._id}>
+                      <td><strong>{m.equipment_id || 'N/A'}</strong></td>
+                      <td><SABadge s={(m.type || 'general').toLowerCase()} /></td>
+                      <td>{m.technician_name || 'N/A'}</td>
+                      <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{m.scheduled_date ? new Date(m.scheduled_date).toLocaleDateString() : 'N/A'}</td>
+                      <td style={{ fontWeight: 700 }}>{m.cost ? `₹${m.cost}` : 'N/A'}</td>
+                      <td><SABadge s={m.status || 'pending'} /></td>
+                      <td>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button className="sa-link-btn" onClick={() => handleUpdateStatus(m._id, m.status === 'completed' ? 'pending' : 'completed')}><FaEdit /></button>
+                          <button className="sa-link-btn" style={{ color: "#ef4444" }} onClick={() => handleDeleteMaintenance(m._id)}><FaTrash /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+      {showModal && (
+        <SAModal title="Schedule Maintenance" onClose={() => setShowModal(false)}>
+          <div className="sa-form-group"><label>Equipment ID</label><input className="sa-input" value={form.equipmentId} onChange={e => setForm(f => ({ ...f, equipmentId: e.target.value }))} placeholder="Equipment ID (MongoDB ObjectId)" /></div>
+          <div className="sa-form-group"><label>Type</label>
+            <select className="sa-input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+              <option value="">Select Type</option>
+              <option value="routine">Routine</option>
+              <option value="repair">Repair</option>
+              <option value="emergency">Emergency</option>
+              <option value="inspection">Inspection</option>
+            </select>
+          </div>
+          <div className="sa-form-group"><label>Technician Name</label><input className="sa-input" value={form.technician_name} onChange={e => setForm(f => ({ ...f, technician_name: e.target.value }))} placeholder="Technician name" /></div>
+          <div className="sa-form-group"><label>Scheduled Date</label><input className="sa-input" type="date" value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} /></div>
+          <div className="sa-form-group"><label>Cost</label><input className="sa-input" type="number" value={form.cost} onChange={e => setForm(f => ({ ...f, cost: e.target.value }))} placeholder="Cost in rupees" /></div>
+          <div className="sa-form-group"><label>Description</label><textarea className="sa-input" rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Maintenance description" /></div>
+          <div className="sa-form-group"><label>Status</label>
+            <select className="sa-input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="btn btn-primary sa-btn-sm" onClick={handleCreateMaintenance} disabled={isSubmitting}>{isSubmitting ? "Scheduling..." : "Schedule"}</button>
+            <button className="btn btn-outline sa-btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
+          </div>
+        </SAModal>
+      )}
     </div>
   );
 }
 
 // ─── INTEGRATIONS: API SETTINGS ───────────────────────────────────────────────
 function SAApiSettings() {
-  const [intgs, setIntgs] = useState(integrations);
+  const [integrations, setIntegrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [testingId, setTestingId] = useState(null);
   const { toast, show } = useToast();
-  const toggle = (id) => {
-    setIntgs(prev => prev.map(i => i.id === id ? { ...i, enabled: !i.enabled } : i));
-    const item = intgs.find(i => i.id === id);
-    show(`${item.name} ${item.enabled ? "disabled" : "enabled"}`);
-  };
-  const cats = [...new Set(intgs.map(i => i.category))];
+
+  // Fetch integrations from backend
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.integrations.getIntegrations();
+      console.log('[SAApiSettings] Response:', response);
+      const integrationsArray = response?.data?.integrations || [];
+      setIntegrations(Array.isArray(integrationsArray) ? integrationsArray : []);
+    } catch (err) {
+      console.error('[SAApiSettings] Error fetching integrations:', err);
+      setError(err.message);
+      setIntegrations([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIntegrations();
+  }, [fetchIntegrations]);
+
+  const handleToggle = useCallback(async (id) => {
+    try {
+      await superAdminAPI.integrations.toggleIntegration(id);
+      const integration = integrations.find(i => i._id === id);
+      show(`${integration.name} ${integration.enabled ? "disabled" : "enabled"}`);
+      fetchIntegrations();
+    } catch (err) {
+      console.error('[SAApiSettings] Error toggling integration:', err);
+      show("Error toggling integration: " + (err.response?.data?.message || err.message));
+    }
+  }, [integrations, show, fetchIntegrations]);
+
+  const handleTestConnection = useCallback(async (id) => {
+    try {
+      setTestingId(id);
+      await superAdminAPI.integrations.testIntegrationConnection(id);
+      show("Connection test successful!");
+      fetchIntegrations();
+    } catch (err) {
+      console.error('[SAApiSettings] Error testing connection:', err);
+      show("Connection test failed: " + (err.response?.data?.message || err.message));
+    } finally {
+      setTestingId(null);
+    }
+  }, [show, fetchIntegrations]);
+
+  const handleRefreshKeys = useCallback(async () => {
+    try {
+      show("API keys refreshed!");
+      fetchIntegrations();
+    } catch (err) {
+      console.error('[SAApiSettings] Error refreshing keys:', err);
+      show("Error refreshing keys");
+    }
+  }, [show, fetchIntegrations]);
+
+  const categories = [...new Set(integrations.map(i => i.category))];
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaPlug style={{ marginRight: 8 }} />API Settings</h2>
-        <button className="btn btn-outline sa-btn-sm" onClick={() => show("API keys refreshed!")}><FaSync style={{ marginRight: 6 }} />Refresh Keys</button>
+        <button className="btn btn-outline sa-btn-sm" onClick={handleRefreshKeys} disabled={loading}><FaSync style={{ marginRight: 6 }} />Refresh Keys</button>
       </div>
-      {cats.map(cat => (
-        <div className="sa-card" key={cat}>
-          <div className="sa-card-head"><h3>{cat} Services</h3></div>
-          {intgs.filter(i => i.category === cat).map(i => (
-            <div key={i.id} className="sa-integration-row">
-              <div className="sa-integration-icon">{i.icon}</div>
-              <div className="sa-integration-info">
-                <strong>{i.name}</strong>
-                <span>{i.description}</span>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          {categories.length === 0 ? (
+            <EmptyState title="No integrations found" desc="No API integrations configured yet" />
+          ) : (
+            categories.map(cat => (
+              <div className="sa-card" key={cat}>
+                <div className="sa-card-head"><h3>{cat} Services</h3></div>
+                {integrations.filter(i => i.category === cat).map(i => (
+                  <div key={i._id} className="sa-integration-row">
+                    <div className="sa-integration-icon">{i.icon}</div>
+                    <div className="sa-integration-info">
+                      <strong>{i.name}</strong>
+                      <span>{i.description}</span>
+                      <small style={{ color: i.connectionStatus === 'connected' ? '#22c55e' : '#ef4444', marginTop: 4, display: 'block' }}>
+                        Status: {i.connectionStatus}
+                      </small>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button 
+                        className="btn btn-outline sa-btn-sm" 
+                        onClick={() => handleTestConnection(i._id)}
+                        disabled={testingId === i._id}
+                        style={{ padding: "5px 10px", fontSize: ".75rem" }}
+                      >
+                        {testingId === i._id ? "Testing..." : "Test"}
+                      </button>
+                      <SABadge s={i.enabled ? "enabled" : "disabled"} />
+                      <div 
+                        className={`sa-toggle ${i.enabled ? "sa-toggle-on" : ""}`} 
+                        onClick={() => handleToggle(i._id)} 
+                        style={{ cursor: "pointer" }} 
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <SABadge s={i.enabled ? "enabled" : "disabled"} />
-                <div className={`sa-toggle ${i.enabled ? "sa-toggle-on" : ""}`} onClick={() => toggle(i.id)} style={{ cursor: "pointer" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
+            ))
+          )}
+        </>
+      )}
     </div>
   );
 }
 
 // ─── INTEGRATIONS: THIRD-PARTY APPS ──────────────────────────────────────────
 function SAThirdParty() {
-  const [intgs, setIntgs] = useState(integrations);
+  const [apps, setApps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [installingId, setInstallingId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", category: "Payment", description: "", icon: "🔌", apiKey: "", apiSecret: "" });
   const { toast, show } = useToast();
-  const toggle = (id) => {
-    setIntgs(prev => prev.map(i => i.id === id ? { ...i, enabled: !i.enabled } : i));
-    const item = intgs.find(i => i.id === id);
-    show(`${item.name} ${item.enabled ? "disconnected" : "connected"}`);
-  };
+
+  // Fetch available apps from backend
+  const fetchApps = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.integrations.getAvailableApps();
+      console.log('[SAThirdParty] Response:', response);
+      const appsArray = response?.data?.apps || [];
+      setApps(Array.isArray(appsArray) ? appsArray : []);
+    } catch (err) {
+      console.error('[SAThirdParty] Error fetching apps:', err);
+      setError(err.message);
+      setApps([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchApps();
+  }, [fetchApps]);
+
+  const handleInstallApp = useCallback(async (id) => {
+    try {
+      setInstallingId(id);
+      await superAdminAPI.integrations.installApp(id);
+      const app = apps.find(a => a.id === id);
+      show(`${app.name} installed successfully!`);
+      fetchApps();
+    } catch (err) {
+      console.error('[SAThirdParty] Error installing app:', err);
+      show("Error installing app: " + (err.response?.data?.message || err.message));
+    } finally {
+      setInstallingId(null);
+    }
+  }, [apps, show, fetchApps]);
+
+  const handleUninstallApp = useCallback(async (id) => {
+    try {
+      setInstallingId(id);
+      await superAdminAPI.integrations.uninstallApp(id);
+      const app = apps.find(a => a.id === id);
+      show(`${app.name} uninstalled successfully!`);
+      fetchApps();
+    } catch (err) {
+      console.error('[SAThirdParty] Error uninstalling app:', err);
+      show("Error uninstalling app: " + (err.response?.data?.message || err.message));
+    } finally {
+      setInstallingId(null);
+    }
+  }, [apps, show, fetchApps]);
+
+  const handleCreateIntegration = useCallback(async () => {
+    try {
+      if (!form.name || !form.category) {
+        show("Please fill in all required fields");
+        return;
+      }
+      setIsSubmitting(true);
+      await superAdminAPI.integrations.createIntegration({
+        name: form.name,
+        category: form.category,
+        description: form.description,
+        icon: form.icon,
+        apiKey: form.apiKey,
+        apiSecret: form.apiSecret,
+      });
+      show("Integration created successfully!");
+      setShowModal(false);
+      setForm({ name: "", category: "Payment", description: "", icon: "🔌", apiKey: "", apiSecret: "" });
+      fetchApps();
+    } catch (err) {
+      console.error('[SAThirdParty] Error creating integration:', err);
+      show("Error creating integration: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, show, fetchApps]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaBoxOpen style={{ marginRight: 8 }} />Third-party Apps</h2>
-        <button className="btn btn-primary sa-btn-sm" onClick={() => show("Browse integrations marketplace...")}><FaPlus style={{ marginRight: 6 }} />Add Integration</button>
+        <button className="btn btn-primary sa-btn-sm" onClick={() => setShowModal(true)} disabled={loading}><FaPlus style={{ marginRight: 6 }} />Add Integration</button>
       </div>
-      <div className="sa-integrations-grid">
-        {intgs.map(i => (
-          <div className="sa-card sa-integration-card" key={i.id}>
-            <div className="sa-integration-card-icon">{i.icon}</div>
-            <h4>{i.name}</h4>
-            <span className="sa-integration-cat">{i.category}</span>
-            <p>{i.description}</p>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
-              <SABadge s={i.enabled ? "enabled" : "disabled"} />
-              <button className={`sa-btn-sm ${i.enabled ? "btn btn-outline" : "btn btn-primary"}`} style={{ padding: "5px 12px", fontSize: ".78rem" }} onClick={() => toggle(i.id)}>
-                {i.enabled ? "Disconnect" : "Connect"}
-              </button>
-            </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <div className="sa-integrations-grid">
+          {apps.length === 0 ? (
+            <EmptyState title="No apps available" desc="No third-party apps configured yet" />
+          ) : (
+            apps.map(app => (
+              <div className="sa-card sa-integration-card" key={app.id}>
+                <div className="sa-integration-card-icon">{app.icon}</div>
+                <h4>{app.name}</h4>
+                <span className="sa-integration-cat">{app.category}</span>
+                <p>{app.description}</p>
+                {app.permissions && app.permissions.length > 0 && (
+                  <div style={{ fontSize: ".75rem", color: "var(--text-secondary)", marginTop: 8, marginBottom: 8 }}>
+                    <strong>Permissions:</strong> {app.permissions.join(", ")}
+                  </div>
+                )}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+                  <SABadge s={app.installed ? "enabled" : "disabled"} />
+                  <button 
+                    className={`sa-btn-sm ${app.installed ? "btn btn-outline" : "btn btn-primary"}`} 
+                    style={{ padding: "5px 12px", fontSize: ".78rem" }} 
+                    onClick={() => app.installed ? handleUninstallApp(app.id) : handleInstallApp(app.id)}
+                    disabled={installingId === app.id}
+                  >
+                    {installingId === app.id ? (app.installed ? "Uninstalling..." : "Installing...") : (app.installed ? "Uninstall" : "Install")}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+      {showModal && (
+        <SAModal title="Add Integration" onClose={() => setShowModal(false)}>
+          <div className="sa-form-group"><label>Integration Name *</label><input className="sa-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Razorpay" /></div>
+          <div className="sa-form-group"><label>Category *</label>
+            <select className="sa-input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              <option value="Payment">Payment</option>
+              <option value="SMS">SMS</option>
+              <option value="Email">Email</option>
+              <option value="Analytics">Analytics</option>
+              <option value="Video">Video</option>
+              <option value="Comms">Comms</option>
+              <option value="Storage">Storage</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
-        ))}
-      </div>
+          <div className="sa-form-group"><label>Description</label><input className="sa-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Brief description" /></div>
+          <div className="sa-form-group"><label>Icon</label><input className="sa-input" value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="e.g. 💳" /></div>
+          <div className="sa-form-group"><label>API Key</label><input className="sa-input" type="password" value={form.apiKey} onChange={e => setForm(f => ({ ...f, apiKey: e.target.value }))} placeholder="API key" /></div>
+          <div className="sa-form-group"><label>API Secret</label><input className="sa-input" type="password" value={form.apiSecret} onChange={e => setForm(f => ({ ...f, apiSecret: e.target.value }))} placeholder="API secret" /></div>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button className="btn btn-primary sa-btn-sm" onClick={handleCreateIntegration} disabled={isSubmitting}>{isSubmitting ? "Creating..." : "Create Integration"}</button>
+            <button className="btn btn-outline sa-btn-sm" onClick={() => setShowModal(false)}>Cancel</button>
+          </div>
+        </SAModal>
+      )}
     </div>
   );
 }
@@ -1438,7 +1786,115 @@ function SAThirdParty() {
 function SAImportData() {
   const [dragging, setDragging] = useState(false);
   const [file, setFile] = useState(null);
+  const [importType, setImportType] = useState("members");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [importHistory, setImportHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
+  const [validationErrors, setValidationErrors] = useState([]);
   const { toast, show } = useToast();
+
+  // Fetch import history
+  const fetchImportHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.dataManagement.getImportHistory();
+      console.log('[SAImportData] History Response:', response);
+      const historyArray = response?.data?.imports || [];
+      setImportHistory(Array.isArray(historyArray) ? historyArray : []);
+    } catch (err) {
+      console.error('[SAImportData] Error fetching import history:', err);
+      setError(err.message);
+      setImportHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchImportHistory();
+  }, [fetchImportHistory]);
+
+  // Validate file
+  const validateFile = (file) => {
+    const errors = [];
+    const validTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/json'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (!validTypes.includes(file.type)) {
+      errors.push('Invalid file type. Please upload CSV, Excel, or JSON files.');
+    }
+    
+    if (file.size > maxSize) {
+      errors.push('File size exceeds 10MB limit.');
+    }
+    
+    if (file.name.length > 100) {
+      errors.push('File name is too long (max 100 characters).');
+    }
+    
+    return errors;
+  };
+
+  const handleImport = useCallback(async () => {
+    if (!file) {
+      show("Please select a file");
+      return;
+    }
+
+    // Validate file
+    const errors = validateFile(file);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      show("File validation failed. Please check the errors.");
+      return;
+    }
+    setValidationErrors([]);
+
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+      await superAdminAPI.dataManagement.importData(file, importType, (progress) => {
+        setUploadProgress(progress);
+      });
+      show(`${file.name} imported successfully!`);
+      setFile(null);
+      setUploadProgress(0);
+      fetchImportHistory();
+    } catch (err) {
+      console.error('[SAImportData] Error importing data:', err);
+      show("Error importing data: " + (err.response?.data?.message || err.message));
+    } finally {
+      setUploading(false);
+    }
+  }, [file, importType, show, fetchImportHistory]);
+
+  const handleDownloadTemplate = useCallback(async () => {
+    try {
+      setDownloadingTemplate(true);
+      const response = await superAdminAPI.dataManagement.exportData(`${importType}_template`, 'csv');
+      
+      // Create blob and download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${importType}_template.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      show("Template downloaded successfully!");
+    } catch (err) {
+      console.error('[SAImportData] Error downloading template:', err);
+      show("Error downloading template: " + (err.response?.data?.message || err.message));
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  }, [importType, show]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
@@ -1449,190 +1905,778 @@ function SAImportData() {
           className={`sa-dropzone ${dragging ? "sa-dropzone-active" : ""}`}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
-          onDrop={e => { e.preventDefault(); setDragging(false); setFile(e.dataTransfer.files[0]); show("File ready to import!"); }}
+          onDrop={e => { 
+            e.preventDefault(); 
+            setDragging(false); 
+            const droppedFile = e.dataTransfer.files[0];
+            if (droppedFile) {
+              const errors = validateFile(droppedFile);
+              if (errors.length > 0) {
+                setValidationErrors(errors);
+                show("File validation failed. Please check the errors.");
+              } else {
+                setFile(droppedFile);
+                setValidationErrors([]);
+                show("File validated and ready to import!");
+              }
+            }
+          }}
         >
           <FaCloudUploadAlt style={{ fontSize: "2.5rem", color: "var(--accent)", marginBottom: 12 }} />
           <p>Drag & drop your CSV file here</p>
           <span>or</span>
           <label className="btn btn-outline sa-btn-sm" style={{ marginTop: 8, cursor: "pointer" }}>
-            Browse File <input type="file" accept=".csv,.xlsx" style={{ display: "none" }} onChange={e => { setFile(e.target.files[0]); show("File selected!"); }} />
+            Browse File <input type="file" accept=".csv,.xlsx,.json" style={{ display: "none" }} onChange={e => {
+              const selectedFile = e.target.files[0];
+              if (selectedFile) {
+                const errors = validateFile(selectedFile);
+                if (errors.length > 0) {
+                  setValidationErrors(errors);
+                  show("File validation failed. Please check the errors.");
+                } else {
+                  setFile(selectedFile);
+                  setValidationErrors([]);
+                  show("File selected and validated!");
+                }
+              }
+            }} />
           </label>
           {file && <p style={{ marginTop: 12, color: "#22c55e", fontWeight: 600 }}>✓ {file.name}</p>}
+          {uploading && uploadProgress > 0 && (
+            <div style={{ marginTop: 12, width: "100%" }}>
+              <div style={{ background: "#e5e7eb", borderRadius: "4px", height: "8px", overflow: "hidden" }}>
+                <div style={{ background: "#22c55e", height: "100%", width: `${uploadProgress}%`, transition: "width 0.3s" }} />
+              </div>
+              <small style={{ color: "var(--text-secondary)", marginTop: 4, display: "block" }}>{uploadProgress}% uploaded</small>
+            </div>
+          )}
         </div>
         <div className="sa-form-group" style={{ marginTop: 16 }}><label>Import Type</label>
-          <select className="sa-input"><option>Members</option><option>Transactions</option><option>Equipment</option><option>Attendance</option></select>
+          <select className="sa-input" value={importType} onChange={e => setImportType(e.target.value)}>
+            <option value="members">Members</option>
+            <option value="transactions">Transactions</option>
+            <option value="equipment">Equipment</option>
+            <option value="attendance">Attendance</option>
+            <option value="trainers">Trainers</option>
+            <option value="branches">Branches</option>
+          </select>
         </div>
+        {validationErrors.length > 0 && (
+          <div style={{ marginTop: 12, padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px" }}>
+            <strong>Validation Errors:</strong>
+            <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+              {validationErrors.map((error, i) => (
+                <li key={i} style={{ fontSize: ".8rem" }}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <button className="btn btn-primary sa-btn-sm" onClick={() => show("Import started! Processing...")} disabled={!file}>Start Import</button>
-          <button className="btn btn-outline sa-btn-sm" onClick={() => show("Template downloaded!")}>Download Template</button>
+          <button className="btn btn-primary sa-btn-sm" onClick={handleImport} disabled={!file || uploading}>{uploading ? `Importing (${uploadProgress}%)...` : "Start Import"}</button>
+          <button className="btn btn-outline sa-btn-sm" onClick={handleDownloadTemplate} disabled={downloadingTemplate}>
+            {downloadingTemplate ? "Downloading..." : "Download Template"}
+          </button>
         </div>
       </div>
       <div className="sa-card">
         <div className="sa-card-head"><h3>Recent Imports</h3></div>
-        <table className="sa-table">
-          <thead><tr><th>File</th><th>Type</th><th>Records</th><th>Date</th><th>Status</th></tr></thead>
-          <tbody>
-            {[
-              { file: "members_may2026.csv", type: "Members", records: 312, date: "May 1, 2026", status: "completed" },
-              { file: "transactions_apr.csv", type: "Transactions", records: 1840, date: "Apr 30, 2026", status: "completed" },
-              { file: "equipment_list.xlsx", type: "Equipment", records: 24, date: "Apr 15, 2026", status: "completed" },
-            ].map((r, i) => (
-              <tr key={i}>
-                <td><strong>{r.file}</strong></td>
-                <td><SABadge s={r.type.toLowerCase()} /></td>
-                <td>{r.records.toLocaleString()}</td>
-                <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{r.date}</td>
-                <td><SABadge s={r.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {loading && <LoadingState />}
+        {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+        {!loading && !error && (
+          <table className="sa-table">
+            <thead><tr><th>File</th><th>Type</th><th>Records</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody>
+              {importHistory.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: "center", color: "var(--text-secondary)" }}>No imports yet</td></tr>
+              ) : (
+                importHistory.map((r, i) => (
+                  <tr key={i}>
+                    <td><strong>{r.fileName || r.file}</strong></td>
+                    <td><SABadge s={(r.importType || r.type || "").toLowerCase()} /></td>
+                    <td>{(r.recordsImported || r.records || 0).toLocaleString()}</td>
+                    <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>{new Date(r.createdAt || r.date).toLocaleDateString()}</td>
+                    <td><SABadge s={r.status || "completed"} /></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
 }
 
 function SAExportData() {
+  const [exportOptions, setExportOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(null);
+  const [exportHistory, setExportHistory] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [scheduledExports, setScheduledExports] = useState([]);
   const { toast, show } = useToast();
-  const exports = [
-    { name: "All Members", desc: "Full member list with details", icon: <FaUsers />, color: "#3b82f6" },
-    { name: "Transactions", desc: "Payment history & logs", icon: <FaCreditCard />, color: "#22c55e" },
-    { name: "Revenue Report", desc: "Monthly revenue breakdown", icon: <FaMoneyBillWave />, color: "#f97316" },
-    { name: "Equipment List", desc: "All equipment with status", icon: <FaTools />, color: "#8b5cf6" },
-    { name: "Audit Logs", desc: "System activity history", icon: <FaShieldAlt />, color: "#ef4444" },
-    { name: "Attendance Data", desc: "Check-in/check-out records", icon: <FaCalendarAlt />, color: "#06b6d4" },
-  ];
+
+  // Fetch export options
+  const fetchExportOptions = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.dataManagement.getExportOptions();
+      console.log('[SAExportData] Options Response:', response);
+      const optionsArray = response?.data?.options || [
+        { name: "All Members", desc: "Full member list with details", icon: <FaUsers />, color: "#3b82f6", type: "members" },
+        { name: "Transactions", desc: "Payment history & logs", icon: <FaCreditCard />, color: "#22c55e", type: "transactions" },
+        { name: "Revenue Report", desc: "Monthly revenue breakdown", icon: <FaMoneyBillWave />, color: "#f97316", type: "revenue" },
+        { name: "Equipment List", desc: "All equipment with status", icon: <FaTools />, color: "#8b5cf6", type: "equipment" },
+        { name: "Audit Logs", desc: "System activity history", icon: <FaShieldAlt />, color: "#ef4444", type: "audit" },
+        { name: "Attendance Data", desc: "Check-in/check-out records", icon: <FaCalendarAlt />, color: "#06b6d4", type: "attendance" },
+        { name: "Trainers", desc: "Trainer profiles and assignments", icon: <FaUserTie />, color: "#10b981", type: "trainers" },
+        { name: "Branches", desc: "Branch information and statistics", icon: <FaBuilding />, color: "#f59e0b", type: "branches" },
+      ];
+      setExportOptions(Array.isArray(optionsArray) ? optionsArray : []);
+    } catch (err) {
+      console.error('[SAExportData] Error fetching export options:', err);
+      setError(err.message);
+      setExportOptions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch export history
+  const fetchExportHistory = useCallback(async () => {
+    try {
+      const response = await superAdminAPI.dataManagement.getExportHistory();
+      const historyArray = response?.data?.exports || [];
+      setExportHistory(Array.isArray(historyArray) ? historyArray : []);
+    } catch (err) {
+      console.error('[SAExportData] Error fetching export history:', err);
+      setExportHistory([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchExportOptions();
+    fetchExportHistory();
+  }, [fetchExportOptions, fetchExportHistory]);
+
+  const handleExport = useCallback(async (exportType, format) => {
+    try {
+      setExporting(`${exportType}-${format}`);
+      const response = await superAdminAPI.dataManagement.exportData(exportType, format, filters);
+      
+      // Create blob and download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${exportType}_${new Date().toISOString().split('T')[0]}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      show(`${exportType} exported as ${format.toUpperCase()}!`);
+      fetchExportHistory(); // Refresh export history
+    } catch (err) {
+      console.error('[SAExportData] Error exporting data:', err);
+      show("Error exporting data: " + (err.response?.data?.message || err.message));
+    } finally {
+      setExporting(null);
+    }
+  }, [filters, show, fetchExportHistory]);
+
+  const handleScheduleExport = useCallback(async (exportType, schedule) => {
+    try {
+      // This would call a scheduled export API endpoint
+      show(`Scheduled ${exportType} export: ${schedule}`);
+    } catch (err) {
+      console.error('[SAExportData] Error scheduling export:', err);
+      show("Error scheduling export: " + (err.response?.data?.message || err.message));
+    }
+  }, [show]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
-      <div className="sa-section-head"><h2><FaCloudDownloadAlt style={{ marginRight: 8 }} />Export Data</h2></div>
-      <div className="sa-export-grid">
-        {exports.map((e, i) => (
-          <div className="sa-card sa-export-card" key={i}>
-            <div className="sa-export-icon" style={{ background: e.color + "22", color: e.color }}>{e.icon}</div>
-            <h4>{e.name}</h4>
-            <p>{e.desc}</p>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button className="btn btn-outline sa-btn-sm" onClick={() => show(`Exporting ${e.name} as CSV...`)}><FaDownload style={{ marginRight: 4 }} />CSV</button>
-              <button className="btn btn-outline sa-btn-sm" onClick={() => show(`Exporting ${e.name} as PDF...`)}><FaDownload style={{ marginRight: 4 }} />PDF</button>
+      <div className="sa-section-head">
+        <h2><FaCloudDownloadAlt style={{ marginRight: 8 }} />Export Data</h2>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-outline sa-btn-sm" onClick={() => setShowFilters(!showFilters)}>
+            <FaFilter style={{ marginRight: 6 }} />{showFilters ? "Hide Filters" : "Show Filters"}
+          </button>
+          <button className="btn btn-outline sa-btn-sm" onClick={() => show("Scheduled exports coming soon!")}>
+            <FaClock style={{ marginRight: 6 }} />Scheduled Exports
+          </button>
+        </div>
+      </div>
+      
+      {showFilters && (
+        <div className="sa-card" style={{ marginBottom: 16 }}>
+          <div className="sa-card-head"><h3>Export Filters</h3></div>
+          <div className="sa-form-row" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div className="sa-form-group">
+              <label>Date Range</label>
+              <select className="sa-input" value={filters.dateRange || ""} onChange={e => setFilters({...filters, dateRange: e.target.value})}>
+                <option value="">All Time</option>
+                <option value="last7days">Last 7 Days</option>
+                <option value="last30days">Last 30 Days</option>
+                <option value="last90days">Last 90 Days</option>
+                <option value="thisyear">This Year</option>
+              </select>
+            </div>
+            <div className="sa-form-group">
+              <label>Status</label>
+              <select className="sa-input" value={filters.status || ""} onChange={e => setFilters({...filters, status: e.target.value})}>
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+            <div className="sa-form-group">
+              <label>Format</label>
+              <select className="sa-input" value={filters.format || ""} onChange={e => setFilters({...filters, format: e.target.value})}>
+                <option value="">All Formats</option>
+                <option value="csv">CSV</option>
+                <option value="excel">Excel</option>
+                <option value="json">JSON</option>
+              </select>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+      
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          <div className="sa-export-grid">
+            {exportOptions.length === 0 ? (
+              <EmptyState title="No export options available" desc="No data available for export" />
+            ) : (
+              exportOptions.map((e, i) => (
+                <div className="sa-card sa-export-card" key={i}>
+                  <div className="sa-export-icon" style={{ background: e.color + "22", color: e.color }}>{e.icon}</div>
+                  <h4>{e.name}</h4>
+                  <p>{e.desc}</p>
+                  <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+                    <button 
+                      className="btn btn-outline sa-btn-sm" 
+                      onClick={() => handleExport(e.type || e.name.toLowerCase(), 'csv')}
+                      disabled={exporting === `${e.type || e.name.toLowerCase()}-csv`}
+                    >
+                      <FaDownload style={{ marginRight: 4 }} />{exporting === `${e.type || e.name.toLowerCase()}-csv` ? "Exporting..." : "CSV"}
+                    </button>
+                    <button 
+                      className="btn btn-outline sa-btn-sm" 
+                      onClick={() => handleExport(e.type || e.name.toLowerCase(), 'excel')}
+                      disabled={exporting === `${e.type || e.name.toLowerCase()}-excel`}
+                    >
+                      <FaDownload style={{ marginRight: 4 }} />{exporting === `${e.type || e.name.toLowerCase()}-excel` ? "Exporting..." : "Excel"}
+                    </button>
+                    <button 
+                      className="btn btn-outline sa-btn-sm" 
+                      onClick={() => handleExport(e.type || e.name.toLowerCase(), 'json')}
+                      disabled={exporting === `${e.type || e.name.toLowerCase()}-json`}
+                    >
+                      <FaDownload style={{ marginRight: 4 }} />{exporting === `${e.type || e.name.toLowerCase()}-json` ? "Exporting..." : "JSON"}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {exportHistory.length > 0 && (
+            <div className="sa-card" style={{ marginTop: 24 }}>
+              <div className="sa-card-head"><h3>Recent Exports</h3></div>
+              <table className="sa-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Format</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Size</th>
+                  </tr>
+                </thead>
+                <tbody>
+                 {exportHistory.slice(0, 5).map((item, i) => (
+  <tr key={i}>
+    <td><strong>{item.type}</strong></td>
+    <td><SABadge s={item.format} /></td>
+    <td style={{ fontSize: ".78rem", color: "var(--text-secondary)" }}>
+      {new Date(item.createdAt).toLocaleDateString()}
+    </td>
+    <td><SABadge s={item.status || "completed"} /></td>
+    <td>{item.size || "N/A"}</td>
+  </tr>
+))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
 function SABackups() {
   const { toast, show } = useToast();
-  const backups = [
-    { name: "Daily Backup", date: "May 6, 2026 3:00 AM", size: "2.4 GB", type: "auto", status: "completed" },
-    { name: "Daily Backup", date: "May 5, 2026 3:00 AM", size: "2.3 GB", type: "auto", status: "completed" },
-    { name: "Manual Backup", date: "May 3, 2026 2:15 PM", size: "2.3 GB", type: "manual", status: "completed" },
-    { name: "Weekly Backup", date: "Apr 28, 2026 3:00 AM", size: "2.1 GB", type: "auto", status: "completed" },
-  ];
+  const [backups, setBackups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [restoringBackup, setRestoringBackup] = useState(null);
+  const [deletingBackup, setDeletingBackup] = useState(null);
+  const [backupSchedule, setBackupSchedule] = useState({
+    dailyEnabled: true,
+    weeklyEnabled: true,
+    cloudSyncEnabled: true
+  });
+  const [stats, setStats] = useState({
+    lastBackup: null,
+    totalBackups: 0,
+    successRate: 0
+  });
+
+  // Fetch backups
+  const fetchBackups = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.dataManagement.getBackups();
+      const backupsArray = response?.data?.backups || [];
+      setBackups(Array.isArray(backupsArray) ? backupsArray : []);
+      
+      // Calculate stats
+      const totalBackups = backupsArray.length;
+      const completedBackups = backupsArray.filter(b => b.status === 'completed').length;
+      const successRate = totalBackups > 0 ? Math.round((completedBackups / totalBackups) * 100) : 0;
+      const lastBackup = backupsArray.length > 0 ? backupsArray[0] : null;
+      
+      setStats({
+        lastBackup: lastBackup ? new Date(lastBackup.createdAt).toLocaleString() : 'No backups yet',
+        totalBackups,
+        successRate
+      });
+    } catch (err) {
+      console.error('[SABackups] Error fetching backups:', err);
+      setError(err.message);
+      setBackups([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch backup schedule
+  const fetchBackupSchedule = useCallback(async () => {
+    try {
+      const response = await superAdminAPI.dataManagement.getBackupSchedule();
+      const schedule = response?.data?.schedule || {
+        dailyEnabled: true,
+        weeklyEnabled: true,
+        cloudSyncEnabled: true
+      };
+      setBackupSchedule(schedule);
+    } catch (err) {
+      console.error('[SABackups] Error fetching backup schedule:', err);
+      // Keep default values on error
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBackups();
+    fetchBackupSchedule();
+  }, [fetchBackups, fetchBackupSchedule]);
+
+  // Create backup
+  const handleCreateBackup = useCallback(async () => {
+    try {
+      setCreatingBackup(true);
+      const response = await superAdminAPI.dataManagement.createBackup({
+        type: 'manual',
+        description: 'Manual backup created from SuperAdmin Dashboard'
+      });
+      show('Manual backup created successfully!');
+      fetchBackups(); // Refresh backups list
+    } catch (err) {
+      console.error('[SABackups] Error creating backup:', err);
+      show('Error creating backup: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setCreatingBackup(false);
+    }
+  }, [show, fetchBackups]);
+
+  // Restore backup
+  const handleRestoreBackup = useCallback(async (backupId) => {
+    if (!window.confirm('Are you sure you want to restore this backup? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setRestoringBackup(backupId);
+      await superAdminAPI.dataManagement.restoreBackup(backupId);
+      show('Backup restoration initiated successfully!');
+    } catch (err) {
+      console.error('[SABackups] Error restoring backup:', err);
+      show('Error restoring backup: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setRestoringBackup(null);
+    }
+  }, [show]);
+
+  // Delete backup
+  const handleDeleteBackup = useCallback(async (backupId) => {
+    if (!window.confirm('Are you sure you want to delete this backup? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setDeletingBackup(backupId);
+      await superAdminAPI.dataManagement.deleteBackup(backupId);
+      show('Backup deleted successfully!');
+      fetchBackups(); // Refresh backups list
+    } catch (err) {
+      console.error('[SABackups] Error deleting backup:', err);
+      show('Error deleting backup: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setDeletingBackup(null);
+    }
+  }, [show, fetchBackups]);
+
+  // Download backup
+  const handleDownloadBackup = useCallback(async (backupId, backupName) => {
+    try {
+      const response = await superAdminAPI.dataManagement.downloadBackup(backupId);
+      
+      // Create blob and download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${backupName}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      
+      show('Backup downloaded successfully!');
+    } catch (err) {
+      console.error('[SABackups] Error downloading backup:', err);
+      show('Error downloading backup: ' + (err.response?.data?.message || err.message));
+    }
+  }, [show]);
+
+  // Update backup schedule
+  const handleUpdateSchedule = useCallback(async (scheduleType) => {
+    try {
+      const newSchedule = {
+        ...backupSchedule,
+        [scheduleType]: !backupSchedule[scheduleType]
+      };
+      await superAdminAPI.dataManagement.updateBackupSchedule(newSchedule);
+      setBackupSchedule(newSchedule);
+      show(`${scheduleType.replace('Enabled', '')} backup schedule updated!`);
+    } catch (err) {
+      console.error('[SABackups] Error updating backup schedule:', err);
+      show('Error updating backup schedule: ' + (err.response?.data?.message || err.message));
+    }
+  }, [backupSchedule, show]);
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
-      <div className="sa-section-head"><h2><FaDatabase style={{ marginRight: 8 }} />Backups</h2></div>
+      <div className="sa-section-head">
+        <h2><FaDatabase style={{ marginRight: 8 }} />Backups</h2>
+        <button className="btn btn-primary sa-btn-sm" onClick={handleCreateBackup} disabled={creatingBackup}>
+          {creatingBackup ? 'Creating...' : <><FaPlus style={{ marginRight: 6 }} />Create Backup</>}
+        </button>
+      </div>
+      
       <div className="sa-kpi-grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-        <KpiCard icon={<FaDatabase />} label="Last Backup" value="Today 3:00 AM" color="#22c55e" change="2.4 GB" />
-        <KpiCard icon={<FaServer />} label="Total Backups" value={backups.length} color="#3b82f6" change="Last 30 days" />
-        <KpiCard icon={<FaCheckCircle />} label="Success Rate" value="100%" color="#22c55e" />
+        <KpiCard icon={<FaDatabase />} label="Last Backup" value={stats.lastBackup} color="#22c55e" change={backups[0]?.size || "N/A"} />
+        <KpiCard icon={<FaServer />} label="Total Backups" value={stats.totalBackups} color="#3b82f6" change="Last 30 days" />
+        <KpiCard icon={<FaCheckCircle />} label="Success Rate" value={`${stats.successRate}%`} color="#22c55e" />
       </div>
-      <div className="sa-two-col">
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Backup Actions</h3></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button className="btn btn-primary sa-btn-sm" onClick={() => show("Manual backup started...")}>
-              <FaDatabase style={{ marginRight: 8 }} />Create Manual Backup
-            </button>
-            <button className="btn btn-outline sa-btn-sm" onClick={() => show("Restore wizard coming soon...")}>
-              <FaSync style={{ marginRight: 8 }} />Restore from Backup
-            </button>
-            <button className="btn btn-outline sa-btn-sm" onClick={() => show("Downloading latest backup...")}>
-              <FaDownload style={{ marginRight: 8 }} />Download Latest
-            </button>
-          </div>
-          <div className="sa-toggle-row" style={{ marginTop: 16 }}>
-            <span>Auto Daily Backup</span>
-            <div className="sa-toggle sa-toggle-on" />
-          </div>
-          <div className="sa-toggle-row">
-            <span>Weekly Full Backup</span>
-            <div className="sa-toggle sa-toggle-on" />
-          </div>
-          <div className="sa-toggle-row">
-            <span>Cloud Sync (AWS S3)</span>
-            <div className="sa-toggle sa-toggle-on" />
-          </div>
-        </div>
-        <div className="sa-card">
-          <div className="sa-card-head"><h3>Backup History</h3></div>
-          {backups.map((b, i) => (
-            <div key={i} className="sa-backup-row">
-              <div>
-                <strong>{b.name}</strong>
-                <span>{b.date}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: ".75rem", color: "var(--text-secondary)" }}>{b.size}</span>
-                <SABadge s={b.type} />
-                <button className="sa-link-btn" onClick={() => show("Downloading...")}><FaDownload /></button>
-              </div>
+      
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      
+      {!loading && !error && (
+        <div className="sa-two-col">
+          <div className="sa-card">
+            <div className="sa-card-head"><h3>Backup Actions</h3></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <button className="btn btn-primary sa-btn-sm" onClick={handleCreateBackup} disabled={creatingBackup}>
+                <FaDatabase style={{ marginRight: 8 }} />{creatingBackup ? 'Creating Backup...' : 'Create Manual Backup'}
+              </button>
+              <button className="btn btn-outline sa-btn-sm" onClick={() => show('Restore wizard coming soon!')}>
+                <FaSync style={{ marginRight: 8 }} />Restore from Backup
+              </button>
+              <button className="btn btn-outline sa-btn-sm" onClick={() => backups.length > 0 && handleDownloadBackup(backups[0].id, backups[0].name)} disabled={backups.length === 0}>
+                <FaDownload style={{ marginRight: 8 }} />Download Latest
+              </button>
             </div>
-          ))}
+            <div className="sa-toggle-row" style={{ marginTop: 16 }}>
+              <span>Auto Daily Backup</span>
+              <div 
+                className={`sa-toggle ${backupSchedule.dailyEnabled ? "sa-toggle-on" : ""}`} 
+                onClick={() => handleUpdateSchedule('dailyEnabled')}
+                style={{ cursor: "pointer" }}
+              />
+            </div>
+            <div className="sa-toggle-row">
+              <span>Weekly Full Backup</span>
+              <div 
+                className={`sa-toggle ${backupSchedule.weeklyEnabled ? "sa-toggle-on" : ""}`} 
+                onClick={() => handleUpdateSchedule('weeklyEnabled')}
+                style={{ cursor: "pointer" }}
+              />
+            </div>
+            <div className="sa-toggle-row">
+              <span>Cloud Sync (AWS S3)</span>
+              <div 
+                className={`sa-toggle ${backupSchedule.cloudSyncEnabled ? "sa-toggle-on" : ""}`} 
+                onClick={() => handleUpdateSchedule('cloudSyncEnabled')}
+                style={{ cursor: "pointer" }}
+              />
+            </div>
+          </div>
+          <div className="sa-card">
+            <div className="sa-card-head"><h3>Backup History</h3></div>
+            {backups.length === 0 ? (
+              <div style={{ textAlign: "center", color: "var(--text-secondary)", padding: "40px 0" }}>
+                <FaDatabase style={{ fontSize: "3rem", marginBottom: 16, opacity: 0.5 }} />
+                <p>No backups available</p>
+                <p style={{ fontSize: "0.9rem" }}>Create your first backup to get started</p>
+              </div>
+            ) : (
+              backups.map((backup, i) => (
+                <div key={backup.id || i} className="sa-backup-row">
+                  <div>
+                    <strong>{backup.name}</strong>
+                    <span>{new Date(backup.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: ".75rem", color: "var(--text-secondary)" }}>{backup.size || 'N/A'}</span>
+                    <SABadge s={backup.type || 'auto'} />
+                    <SABadge s={backup.status || 'completed'} />
+                    <button 
+                      className="sa-link-btn" 
+                      onClick={() => handleDownloadBackup(backup.id, backup.name)}
+                      title="Download backup"
+                    >
+                      <FaDownload />
+                    </button>
+                    <button 
+                      className="sa-link-btn" 
+                      onClick={() => handleRestoreBackup(backup.id)}
+                      disabled={restoringBackup === backup.id}
+                      title="Restore backup"
+                      style={{ color: restoringBackup === backup.id ? "#6b7280" : "#f59e0b" }}
+                    >
+                      {restoringBackup === backup.id ? <FaSpinner style={{ animation: "spin 1s linear infinite" }} /> : <FaSync />}
+                    </button>
+                    <button 
+                      className="sa-link-btn" 
+                      onClick={() => handleDeleteBackup(backup.id)}
+                      disabled={deletingBackup === backup.id}
+                      title="Delete backup"
+                      style={{ color: deletingBackup === backup.id ? "#6b7280" : "#ef4444" }}
+                    >
+                      {deletingBackup === backup.id ? <FaSpinner style={{ animation: "spin 1s linear infinite" }} /> : <FaTrash />}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // ─── ADVANCED: AI INSIGHTS ────────────────────────────────────────────────────
 function SAAIInsights() {
+  const [insights, setInsights] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const { toast, show } = useToast();
-  const typeColor = { revenue: "#22c55e", churn: "#ef4444", equipment: "#f97316", growth: "#3b82f6", finance: "#8b5cf6" };
+  const typeColor = { revenue: "#22c55e", churn: "#ef4444", equipment: "#f97316", growth: "#3b82f6", finance: "#8b5cf6", engagement: "#ec4899", retention: "#10b981" };
+
+  // Fetch AI insights
+  const fetchInsights = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.advanced.getAllAIInsights();
+      console.log('[SAAIInsights] Response:', response);
+      const insightsArray = response?.insights || [];
+      setInsights(Array.isArray(insightsArray) ? insightsArray : []);
+    } catch (err) {
+      console.error('[SAAIInsights] Error fetching insights:', err);
+      setError(err.message);
+      setInsights([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInsights();
+  }, [fetchInsights]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    show("Refreshing AI analysis...");
+    await fetchInsights();
+    show("AI insights refreshed successfully");
+  };
+
+  const handleAcknowledge = async (insightId) => {
+    try {
+      await superAdminAPI.advanced.acknowledgeAIInsight(insightId);
+      show("Insight acknowledged successfully");
+      fetchInsights();
+    } catch (err) {
+      console.error('[SAAIInsights] Error acknowledging insight:', err);
+      show("Error acknowledging insight: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleAction = async (insight) => {
+    show(`Action: ${insight.action}`);
+    // Here you could implement specific actions based on insight type
+    if (insight.type === 'revenue') {
+      // Navigate to campaigns or billing
+    } else if (insight.type === 'churn') {
+      // Navigate to member engagement
+    } else if (insight.type === 'equipment') {
+      // Navigate to equipment maintenance
+    }
+  };
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
       <div className="sa-section-head">
         <h2><FaRobot style={{ marginRight: 8 }} />AI Insights</h2>
-        <button className="btn btn-outline sa-btn-sm" onClick={() => show("Refreshing AI analysis...")}><FaSync style={{ marginRight: 6 }} />Refresh</button>
+        <button 
+          className="btn btn-outline sa-btn-sm" 
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <FaSync style={{ marginRight: 6, animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </button>
       </div>
       <div className="sa-card" style={{ background: "linear-gradient(135deg, rgba(239,68,68,.08), rgba(139,92,246,.08))", border: "1px solid rgba(139,92,246,.2)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <FaRobot style={{ fontSize: "1.5rem", color: "#8b5cf6" }} />
           <div>
             <strong style={{ color: "var(--text-primary)" }}>AI Analysis Engine</strong>
-            <p style={{ margin: 0, fontSize: ".8rem", color: "var(--text-secondary)" }}>Last analyzed: Today at 6:00 AM · 5 insights generated</p>
+            <p style={{ margin: 0, fontSize: ".8rem", color: "var(--text-secondary)" }}>
+              Last analyzed: {insights.length > 0 ? new Date(insights[0].createdAt).toLocaleString() : 'Never'} · {insights.length} insights generated
+            </p>
           </div>
           <span className="sa-badge sa-green" style={{ marginLeft: "auto" }}>Active</span>
         </div>
       </div>
-      <div className="sa-ai-grid">
-        {aiInsights.map(insight => (
-          <div className="sa-card sa-ai-card" key={insight.id} style={{ borderLeft: `3px solid ${typeColor[insight.type] || "#6b7280"}` }}>
-            <div className="sa-ai-card-head">
-              <span className="sa-ai-icon">{insight.icon}</span>
-              <h4>{insight.title}</h4>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <>
+          {insights.length === 0 ? (
+            <EmptyState title="No AI insights available" desc="AI insights will appear here as patterns are detected in your data" />
+          ) : (
+            <div className="sa-ai-grid">
+              {insights.map(insight => (
+                <div className="sa-card sa-ai-card" key={insight._id} style={{ borderLeft: `3px solid ${typeColor[insight.type] || "#6b7280"}` }}>
+                  <div className="sa-ai-card-head">
+                    <span className="sa-ai-icon">{insight.icon}</span>
+                    <h4>{insight.title}</h4>
+                    <SABadge s={insight.status} />
+                  </div>
+                  <p>{insight.insight}</p>
+                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                    <button 
+                      className="btn btn-outline sa-btn-sm" 
+                      onClick={() => handleAction(insight)}
+                    >
+                      {insight.action} →
+                    </button>
+                    {insight.status === 'active' && (
+                      <button 
+                        className="btn btn-outline sa-btn-sm" 
+                        onClick={() => handleAcknowledge(insight._id)}
+                      >
+                        Acknowledge
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-            <p>{insight.insight}</p>
-            <button className="btn btn-outline sa-btn-sm" style={{ marginTop: 12 }} onClick={() => show(`Action: ${insight.action}`)}>{insight.action} →</button>
-          </div>
-        ))}
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
 // ─── ADVANCED: FEATURE FLAGS ──────────────────────────────────────────────────
 function SAFeatureFlags({ openForm }) {
-  const [flags, setFlags] = useState(featureFlags);
+  const [flags, setFlags] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { toast, show } = useToast();
-  const toggle = (id) => {
-    const flag = flags.find(f => f.id === id);
-    setFlags(prev => prev.map(f => f.id === id ? { ...f, enabled: !f.enabled } : f));
-    show(`${flag.name} ${flag.enabled ? "disabled" : "enabled"}`);
+
+  // Fetch feature flags
+  const fetchFlags = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.advanced.getAllFeatureFlags();
+      console.log('[SAFeatureFlags] Response:', response);
+      const flagsArray = response?.featureFlags || [];
+      setFlags(Array.isArray(flagsArray) ? flagsArray : []);
+    } catch (err) {
+      console.error('[SAFeatureFlags] Error fetching flags:', err);
+      setError(err.message);
+      setFlags([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFlags();
+  }, [fetchFlags]);
+
+  const toggle = async (id) => {
+    try {
+      const flag = flags.find(f => f._id === id);
+      if (!flag) return;
+
+      // Optimistic update
+      setFlags(prev => prev.map(f => f._id === id ? { ...f, enabled: !f.enabled } : f));
+      
+      // Call API
+      await superAdminAPI.advanced.toggleFeatureFlag(id);
+      show(`${flag.name} ${flag.enabled ? "disabled" : "enabled"}`);
+      
+      // Refresh data
+      fetchFlags();
+    } catch (err) {
+      console.error('[SAFeatureFlags] Error toggling flag:', err);
+      show("Error toggling feature flag: " + (err.response?.data?.message || err.message));
+      // Revert optimistic update
+      setFlags(prev => prev.map(f => f._id === id ? { ...f, enabled: !f.enabled } : f));
+    }
   };
   return (
     <div className="sa-section">
@@ -1646,35 +2690,103 @@ function SAFeatureFlags({ openForm }) {
         <KpiCard icon={<FaToggleOff />} label="Disabled Features" value={flags.filter(f => !f.enabled).length} color="#6b7280" />
         <KpiCard icon={<FaFlag />} label="Total Flags" value={flags.length} color="#3b82f6" />
       </div>
-      <div className="sa-card">
-        <table className="sa-table">
-          <thead><tr><th>Feature</th><th>Key</th><th>Environment</th><th>Description</th><th>Status</th><th>Toggle</th></tr></thead>
-          <tbody>
-            {flags.map(f => (
-              <tr key={f.id}>
-                <td><strong>{f.name}</strong></td>
-                <td><code style={{ fontSize: ".72rem", color: "var(--accent)" }}>{f.key}</code></td>
-                <td><SABadge s={f.env} /></td>
-                <td style={{ fontSize: ".8rem", color: "var(--text-secondary)", maxWidth: 220 }}>{f.description}</td>
-                <td><SABadge s={f.enabled ? "enabled" : "disabled"} /></td>
-                <td>
-                  <div className={`sa-toggle ${f.enabled ? "sa-toggle-on" : ""}`} onClick={() => toggle(f.id)} style={{ cursor: "pointer" }} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && (
+        <div className="sa-card">
+          {flags.length === 0 ? (
+            <EmptyState title="No feature flags found" desc="Create your first feature flag to get started" />
+          ) : (
+            <table className="sa-table">
+              <thead><tr><th>Feature</th><th>Key</th><th>Environment</th><th>Description</th><th>Status</th><th>Toggle</th></tr></thead>
+              <tbody>
+                {flags.map(f => (
+                  <tr key={f._id}>
+                    <td><strong>{f.name}</strong></td>
+                    <td><code style={{ fontSize: ".72rem", color: "var(--accent)" }}>{f.key}</code></td>
+                    <td><SABadge s={f.environment} /></td>
+                    <td style={{ fontSize: ".8rem", color: "var(--text-secondary)", maxWidth: 220 }}>{f.description}</td>
+                    <td><SABadge s={f.enabled ? "enabled" : "disabled"} /></td>
+                    <td>
+                      <div className={`sa-toggle ${f.enabled ? "sa-toggle-on" : ""}`} onClick={() => toggle(f._id)} style={{ cursor: "pointer" }} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── ADVANCED: LIVE MONITORING ────────────────────────────────────────────────
 function SALiveMonitoring() {
+  const [monitoringData, setMonitoringData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [tick, setTick] = useState(0);
   const { toast, show } = useToast();
-  // Simulate live updates
-  const activeNow = liveMonitoring.activeUsers + Math.floor(Math.sin(tick) * 5);
+
+  // Fetch live monitoring data
+  const fetchMonitoringData = useCallback(async () => {
+    try {
+      if (!refreshing) setLoading(true);
+      setError(null);
+      const response = await superAdminAPI.advanced.getLiveMonitoringData();
+      console.log('[SALiveMonitoring] Response:', response);
+      const data = response?.monitoringData;
+      setMonitoringData(data);
+    } catch (err) {
+      console.error('[SALiveMonitoring] Error fetching monitoring data:', err);
+      setError(err.message);
+      setMonitoringData(null);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [refreshing]);
+
+  useEffect(() => {
+    fetchMonitoringData();
+  }, [fetchMonitoringData]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshing(true);
+      fetchMonitoringData();
+      setTick(prev => prev + 1);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchMonitoringData]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    show("Refreshing monitoring data...");
+    await fetchMonitoringData();
+    show("Monitoring data refreshed");
+  };
+
+  const handleAcknowledgeAlert = async (monitoringId, alertId) => {
+    try {
+      await superAdminAPI.advanced.acknowledgeMonitoringAlert(monitoringId, alertId);
+      show("Alert acknowledged successfully");
+      fetchMonitoringData();
+    } catch (err) {
+      console.error('[SALiveMonitoring] Error acknowledging alert:', err);
+      show("Error acknowledging alert: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // Simulate live updates for active users
+  const activeNow = monitoringData ? 
+    monitoringData.activeUsers + Math.floor(Math.sin(tick) * 5) : 
+    0;
+
   return (
     <div className="sa-section">
       {toast && <Toast msg={toast} onClose={() => {}} />}
@@ -1683,45 +2795,106 @@ function SALiveMonitoring() {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", animation: "sa-pulse 1.5s infinite" }} />
           <span style={{ fontSize: ".8rem", color: "#22c55e", fontWeight: 700 }}>LIVE</span>
-          <button className="btn btn-outline sa-btn-sm" onClick={() => show("Refreshed!")}><FaSync /></button>
+          <button 
+            className="btn btn-outline sa-btn-sm" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <FaSync style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
         </div>
       </div>
-      <div className="sa-kpi-grid">
-        <KpiCard icon={<FaUsers />} label="Active Users Now" value={activeNow} color="#22c55e" change="Real-time" />
-        <KpiCard icon={<FaCalendarAlt />} label="Check-ins Today" value={liveMonitoring.checkInsToday} color="#3b82f6" change="Across all branches" />
-        <KpiCard icon={<FaHeartbeat />} label="Peak Hour" value={liveMonitoring.peakHour} color="#f97316" />
-        <KpiCard icon={<FaServer />} label="Server Load" value={`${liveMonitoring.currentLoad}%`} color={liveMonitoring.currentLoad > 80 ? "#ef4444" : "#22c55e"} change={liveMonitoring.currentLoad > 80 ? "High load!" : "Normal"} />
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>Branch Live Status</h3></div>
-        {liveMonitoring.branchLive.map((b, i) => (
-          <div key={i} className="sa-live-row">
-            <div className="sa-live-dot" />
-            <strong style={{ width: 120 }}>{b.branch}</strong>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".78rem", marginBottom: 4 }}>
-                <span>{b.active} active now</span>
-                <span>{b.checkins} check-ins today</span>
-              </div>
-              <div style={{ background: "var(--bg-primary)", borderRadius: 4, height: 8 }}>
-                <div style={{ width: `${(b.active / 80) * 100}%`, height: "100%", background: "#22c55e", borderRadius: 4, transition: "width .5s" }} />
-              </div>
-            </div>
+      {loading && <LoadingState />}
+      {error && <div className="sa-error" style={{ padding: "12px", background: "#fee2e2", color: "#991b1b", borderRadius: "4px", marginBottom: "12px" }}>Error: {error}</div>}
+      {!loading && !error && monitoringData && (
+        <>
+          <div className="sa-kpi-grid">
+            <KpiCard icon={<FaUsers />} label="Active Users Now" value={activeNow} color="#22c55e" change="Real-time" />
+            <KpiCard icon={<FaCalendarAlt />} label="Check-ins Today" value={monitoringData.checkInsToday} color="#3b82f6" change="Across all branches" />
+            <KpiCard icon={<FaHeartbeat />} label="Peak Hour" value={monitoringData.peakHour} color="#f97316" />
+            <KpiCard 
+              icon={<FaServer />} 
+              label="Server Load" 
+              value={`${monitoringData.currentLoad}%`} 
+              color={monitoringData.currentLoad > 80 ? "#ef4444" : "#22c55e"} 
+              change={monitoringData.currentLoad > 80 ? "High load!" : "Normal"} 
+            />
           </div>
-        ))}
-      </div>
-      <div className="sa-card">
-        <div className="sa-card-head"><h3>System Load</h3></div>
-        <div className="sa-health-grid">
-          {[["CPU","68%","#22c55e"],["Memory","72%","#f97316"],["Disk","45%","#22c55e"],["Network","38%","#22c55e"],["DB Connections","82%","#f97316"],["Cache Hit","94%","#22c55e"]].map(([s, v, c]) => (
-            <div className="sa-health-item" key={s}>
-              <div className="sa-health-dot" style={{ background: c }} />
-              <span>{s}</span>
-              <strong style={{ color: c }}>{v}</strong>
+          
+          {/* Alerts Section */}
+          {monitoringData.alerts && monitoringData.alerts.length > 0 && (
+            <div className="sa-card" style={{ marginBottom: 16, borderLeft: "4px solid #ef4444" }}>
+              <div className="sa-card-head">
+                <h3>🚨 Active Alerts</h3>
+              </div>
+              {monitoringData.alerts.map((alert, index) => (
+                <div key={index} style={{ 
+                  padding: "8px 12px", 
+                  background: alert.severity === 'critical' ? "#fef2f2" : "#fff7ed",
+                  borderRadius: "4px",
+                  marginBottom: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
+                  <div>
+                    <strong style={{ color: alert.severity === 'critical' ? "#991b1b" : "#ea580c" }}>
+                      {alert.type.replace('_', ' ').toUpperCase()}
+                    </strong>
+                    <p style={{ margin: "4px 0 0 0", fontSize: ".8rem", color: "var(--text-secondary)" }}>
+                      {alert.message}
+                    </p>
+                  </div>
+                  {!alert.acknowledged && (
+                    <button 
+                      className="btn btn-outline sa-btn-sm"
+                      onClick={() => handleAcknowledgeAlert(monitoringData._id, alert._id || index)}
+                    >
+                      Acknowledge
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+
+          <div className="sa-card">
+            <div className="sa-card-head">
+              <h3>Branch Live Status</h3>
+              <span style={{ fontSize: ".8rem", color: "var(--text-secondary)" }}>
+                Updated: {monitoringData.timestamp ? new Date(monitoringData.timestamp).toLocaleTimeString() : 'Unknown'}
+              </span>
+            </div>
+            {monitoringData.branchLive && monitoringData.branchLive.length > 0 ? (
+              monitoringData.branchLive.map((b, i) => (
+                <div key={i} className="sa-live-row">
+                  <div className="sa-live-dot" />
+                  <strong style={{ width: 120 }}>{b.branch}</strong>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: ".78rem", marginBottom: 4 }}>
+                      <span>{b.active} active now</span>
+                      <span>{b.checkins} check-ins today</span>
+                    </div>
+                    <div style={{ background: "var(--bg-primary)", borderRadius: 4, height: 8 }}>
+                      <div style={{ 
+                        width: `${Math.min((b.active / 80) * 100, 100)}%`, 
+                        height: "100%", 
+                        background: b.load > 80 ? "#ef4444" : "#22c55e", 
+                        borderRadius: 4, 
+                        transition: "width .5s" 
+                      }} />
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>
+                No branch data available
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

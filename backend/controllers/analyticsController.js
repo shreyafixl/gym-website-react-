@@ -360,56 +360,102 @@ const getTrainerPerformanceAnalytics = asyncHandler(async (req, res) => {
  * @access  Private (Super Admin only)
  */
 const getFinancialReport = asyncHandler(async (req, res) => {
-  const { startDate, endDate, branchId, type } = req.query;
+  console.log('[getFinancialReport] Starting financial report generation');
+  console.log('[getFinancialReport] Query params:', req.query);
 
-  const query = { status: 'success' };
+  try {
+    const { startDate, endDate, branchId, type } = req.query;
 
-  if (startDate || endDate) {
-    query.createdAt = {};
-    if (startDate) query.createdAt.$gte = new Date(startDate);
-    if (endDate) query.createdAt.$lte = new Date(endDate);
-  }
+    const query = { status: 'success' };
 
-  if (branchId) query.branch = branchId;
-  if (type && type !== 'all') query.type = type;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
 
-  const transactions = await Transaction.find(query)
-    .populate('user', 'fullName email')
-    .populate('branch', 'branchName branchCode')
-    .sort({ createdAt: -1 });
+    if (branchId) query.branch = branchId;
+    if (type && type !== 'all') query.type = type;
 
-  const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
-  const totalRefunds = transactions.filter((t) => t.status === 'refunded').reduce((sum, t) => sum + t.refundAmount, 0);
-  const netRevenue = totalRevenue - totalRefunds;
+    console.log('[getFinancialReport] Fetching transactions with query:', query);
 
-  const paymentMethodBreakdown = transactions.reduce((acc, t) => {
-    acc[t.paymentMethod] = (acc[t.paymentMethod] || 0) + t.amount;
-    return acc;
-  }, {});
+    const transactions = await Transaction.find(query)
+      .populate('user', 'fullName email')
+      .populate('branch', 'branchName branchCode')
+      .sort({ createdAt: -1 });
 
-  const typeBreakdown = transactions.reduce((acc, t) => {
-    acc[t.type] = (acc[t.type] || 0) + t.amount;
-    return acc;
-  }, {});
+    console.log('[getFinancialReport] Found transactions:', transactions.length);
 
-  ApiResponse.success(
-    res,
-    {
+    const totalRevenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const totalRefunds = transactions
+      .filter((t) => t.status === 'refunded')
+      .reduce((sum, t) => sum + (t.refundAmount || 0), 0);
+    const netRevenue = totalRevenue - totalRefunds;
+
+    const paymentMethodBreakdown = transactions.reduce((acc, t) => {
+      const method = t.paymentMethod || 'Unknown';
+      acc[method] = (acc[method] || 0) + (t.amount || 0);
+      return acc;
+    }, {});
+
+    const typeBreakdown = transactions.reduce((acc, t) => {
+      const txType = t.type || 'Unknown';
+      acc[txType] = (acc[txType] || 0) + (t.amount || 0);
+      return acc;
+    }, {});
+
+    console.log('[getFinancialReport] Total revenue:', totalRevenue);
+    console.log('[getFinancialReport] Sending response');
+
+    const response = {
       summary: {
         totalTransactions: transactions.length,
         totalRevenue,
         totalRefunds,
         netRevenue,
         currency: 'INR',
+        dateRange: {
+          startDate: startDate || 'All time',
+          endDate: endDate || 'All time',
+        },
       },
       breakdown: {
         byPaymentMethod: paymentMethodBreakdown,
         byType: typeBreakdown,
       },
-      transactions: transactions.slice(0, 100).map((t) => t.getPublicProfile()),
-    },
-    'Financial report generated successfully'
-  );
+      transactions: transactions.slice(0, 100).map((t) => {
+        try {
+          return t.getPublicProfile ? t.getPublicProfile() : {
+            id: t._id,
+            amount: t.amount,
+            type: t.type,
+            status: t.status,
+            paymentMethod: t.paymentMethod,
+            createdAt: t.createdAt,
+          };
+        } catch (err) {
+          console.error('[getFinancialReport] Error getting public profile:', err.message);
+          return {
+            id: t._id,
+            amount: t.amount,
+            type: t.type,
+            status: t.status,
+            paymentMethod: t.paymentMethod,
+            createdAt: t.createdAt,
+          };
+        }
+      }),
+    };
+
+    ApiResponse.success(
+      res,
+      response,
+      'Financial report generated successfully'
+    );
+  } catch (err) {
+    console.error('[getFinancialReport] Error in financial report:', err);
+    throw err; // Let asyncHandler catch it
+  }
 });
 
 /**
@@ -418,58 +464,107 @@ const getFinancialReport = asyncHandler(async (req, res) => {
  * @access  Private (Super Admin only)
  */
 const getAttendanceReport = asyncHandler(async (req, res) => {
-  const { startDate, endDate, branchId } = req.query;
+  console.log('[getAttendanceReport] Starting attendance report generation');
+  console.log('[getAttendanceReport] Query params:', req.query);
 
-  const query = {};
-  if (branchId) query.assignedBranch = branchId;
+  try {
+    const { startDate, endDate, branchId } = req.query;
 
-  const users = await User.find(query)
-    .select('fullName email role assignedBranch attendance')
-    .populate('assignedBranch', 'branchName branchCode');
+    // Build query - note: User model doesn't have assignedBranch field
+    const query = {};
+    // branchId filtering would require a branch field in User model
+    // For now, we'll fetch all users and filter by attendance
 
-  const attendanceReport = users.map((user) => {
-    let checkIns = user.attendance || [];
+    console.log('[getAttendanceReport] Fetching users with query:', query);
 
-    if (startDate || endDate) {
-      checkIns = checkIns.filter((record) => {
-        const recordDate = new Date(record.date);
-        if (startDate && recordDate < new Date(startDate)) return false;
-        if (endDate && recordDate > new Date(endDate)) return false;
-        return true;
-      });
-    }
+    const users = await User.find(query)
+      .select('fullName email role attendance');
 
-    return {
-      userId: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-      branch: user.assignedBranch
-        ? {
-            id: user.assignedBranch._id,
-            name: user.assignedBranch.branchName,
-            code: user.assignedBranch.branchCode,
-          }
-        : null,
-      totalCheckIns: checkIns.length,
-      lastCheckIn: checkIns.length > 0 ? checkIns[checkIns.length - 1].date : null,
-    };
-  });
+    console.log('[getAttendanceReport] Found users:', users.length);
 
-  const totalCheckIns = attendanceReport.reduce((sum, u) => sum + u.totalCheckIns, 0);
+    const attendanceReport = users.map((user) => {
+      try {
+        // Safely get attendance array, default to empty array if undefined
+        let checkIns = Array.isArray(user.attendance) ? user.attendance : [];
 
-  ApiResponse.success(
-    res,
-    {
+        console.log(`[getAttendanceReport] User ${user._id} has ${checkIns.length} check-ins`);
+
+        // Filter by date range if provided
+        if ((startDate || endDate) && checkIns.length > 0) {
+          checkIns = checkIns.filter((record) => {
+            try {
+              const recordDate = new Date(record.date);
+              if (startDate && recordDate < new Date(startDate)) return false;
+              if (endDate && recordDate > new Date(endDate)) return false;
+              return true;
+            } catch (err) {
+              console.error(`[getAttendanceReport] Error filtering record date:`, err.message);
+              return false;
+            }
+          });
+        }
+
+        // Get last check-in safely
+        let lastCheckIn = null;
+        if (checkIns.length > 0 && checkIns[checkIns.length - 1]) {
+          lastCheckIn = checkIns[checkIns.length - 1].date || null;
+        }
+
+        return {
+          userId: user._id,
+          fullName: user.fullName || 'N/A',
+          email: user.email || 'N/A',
+          role: user.role || 'member',
+          totalCheckIns: checkIns.length,
+          lastCheckIn: lastCheckIn,
+        };
+      } catch (err) {
+        console.error(`[getAttendanceReport] Error processing user ${user._id}:`, err.message);
+        // Return a safe default object instead of crashing
+        return {
+          userId: user._id,
+          fullName: user.fullName || 'N/A',
+          email: user.email || 'N/A',
+          role: user.role || 'member',
+          totalCheckIns: 0,
+          lastCheckIn: null,
+        };
+      }
+    });
+
+    console.log('[getAttendanceReport] Generated report for', attendanceReport.length, 'users');
+
+    const totalCheckIns = attendanceReport.reduce((sum, u) => sum + (u.totalCheckIns || 0), 0);
+    const usersWithAttendance = attendanceReport.filter((u) => u.totalCheckIns > 0).length;
+
+    console.log('[getAttendanceReport] Total check-ins:', totalCheckIns);
+    console.log('[getAttendanceReport] Users with attendance:', usersWithAttendance);
+
+    const response = {
       summary: {
         totalUsers: users.length,
         totalCheckIns,
+        usersWithAttendance,
         averageCheckIns: users.length > 0 ? (totalCheckIns / users.length).toFixed(2) : 0,
+        dateRange: {
+          startDate: startDate || 'All time',
+          endDate: endDate || 'All time',
+        },
       },
       report: attendanceReport.sort((a, b) => b.totalCheckIns - a.totalCheckIns),
-    },
-    'Attendance report generated successfully'
-  );
+    };
+
+    console.log('[getAttendanceReport] Sending response');
+
+    ApiResponse.success(
+      res,
+      response,
+      'Attendance report generated successfully'
+    );
+  } catch (err) {
+    console.error('[getAttendanceReport] Error in attendance report:', err);
+    throw err; // Let asyncHandler catch it
+  }
 });
 
 /**
@@ -478,36 +573,55 @@ const getAttendanceReport = asyncHandler(async (req, res) => {
  * @access  Private (Super Admin only)
  */
 const getMembershipReport = asyncHandler(async (req, res) => {
-  const { status, planId, branchId } = req.query;
+  console.log('[getMembershipReport] Starting membership report generation');
+  console.log('[getMembershipReport] Query params:', req.query);
 
-  const query = {};
-  if (status && status !== 'all') query.status = status;
-  if (planId) query.membershipPlan = planId;
-  if (branchId) query.branch = branchId;
+  try {
+    const { status, planId, branchId } = req.query;
 
-  const subscriptions = await Subscription.find(query)
-    .populate('user', 'fullName email phone')
-    .populate('membershipPlan', 'planName planCode price duration durationType')
-    .populate('branch', 'branchName branchCode')
-    .sort({ createdAt: -1 });
+    const query = {};
+    if (status && status !== 'all') query.status = status;
+    if (planId) query.membershipPlan = planId;
+    if (branchId) query.branch = branchId;
 
-  const statusBreakdown = subscriptions.reduce((acc, s) => {
-    acc[s.status] = (acc[s.status] || 0) + 1;
-    return acc;
-  }, {});
+    console.log('[getMembershipReport] Fetching subscriptions with query:', query);
 
-  const planBreakdown = subscriptions.reduce((acc, s) => {
-    const planName = s.membershipPlan?.planName || 'Unknown';
-    acc[planName] = (acc[planName] || 0) + 1;
-    return acc;
-  }, {});
+    const subscriptions = await Subscription.find(query)
+      .populate('user', 'fullName email phone')
+      .populate('membershipPlan', 'planName planCode price duration durationType')
+      .populate('branch', 'branchName branchCode')
+      .sort({ createdAt: -1 });
 
-  const totalRevenue = subscriptions.reduce((sum, s) => sum + s.amountPaid, 0);
-  const expiringSoon = subscriptions.filter((s) => s.isExpiringSoon()).length;
+    console.log('[getMembershipReport] Found subscriptions:', subscriptions.length);
 
-  ApiResponse.success(
-    res,
-    {
+    const statusBreakdown = subscriptions.reduce((acc, s) => {
+      const subStatus = s.status || 'unknown';
+      acc[subStatus] = (acc[subStatus] || 0) + 1;
+      return acc;
+    }, {});
+
+    const planBreakdown = subscriptions.reduce((acc, s) => {
+      const planName = s.membershipPlan?.planName || 'Unknown';
+      acc[planName] = (acc[planName] || 0) + 1;
+      return acc;
+    }, {});
+
+    const totalRevenue = subscriptions.reduce((sum, s) => sum + (s.amountPaid || 0), 0);
+    
+    // Safely check for expiring soon
+    const expiringSoon = subscriptions.filter((s) => {
+      try {
+        return s.isExpiringSoon && typeof s.isExpiringSoon === 'function' ? s.isExpiringSoon() : false;
+      } catch (err) {
+        console.error('[getMembershipReport] Error checking expiring soon:', err.message);
+        return false;
+      }
+    }).length;
+
+    console.log('[getMembershipReport] Total revenue:', totalRevenue);
+    console.log('[getMembershipReport] Expiring soon:', expiringSoon);
+
+    const response = {
       summary: {
         totalSubscriptions: subscriptions.length,
         totalRevenue,
@@ -518,10 +632,41 @@ const getMembershipReport = asyncHandler(async (req, res) => {
         byStatus: statusBreakdown,
         byPlan: planBreakdown,
       },
-      subscriptions: subscriptions.slice(0, 100).map((s) => s.getPublicProfile()),
-    },
-    'Membership report generated successfully'
-  );
+      subscriptions: subscriptions.slice(0, 100).map((s) => {
+        try {
+          return s.getPublicProfile ? s.getPublicProfile() : {
+            id: s._id,
+            user: s.user,
+            plan: s.membershipPlan,
+            status: s.status,
+            amountPaid: s.amountPaid,
+            createdAt: s.createdAt,
+          };
+        } catch (err) {
+          console.error('[getMembershipReport] Error getting public profile:', err.message);
+          return {
+            id: s._id,
+            user: s.user,
+            plan: s.membershipPlan,
+            status: s.status,
+            amountPaid: s.amountPaid,
+            createdAt: s.createdAt,
+          };
+        }
+      }),
+    };
+
+    console.log('[getMembershipReport] Sending response');
+
+    ApiResponse.success(
+      res,
+      response,
+      'Membership report generated successfully'
+    );
+  } catch (err) {
+    console.error('[getMembershipReport] Error in membership report:', err);
+    throw err; // Let asyncHandler catch it
+  }
 });
 
 /**
@@ -530,66 +675,104 @@ const getMembershipReport = asyncHandler(async (req, res) => {
  * @access  Private (Super Admin only)
  */
 const getTrainerReport = asyncHandler(async (req, res) => {
-  const { branchId } = req.query;
+  console.log('[getTrainerReport] Starting trainer report generation');
+  console.log('[getTrainerReport] Query params:', req.query);
 
-  const query = { role: 'trainer' };
-  if (branchId) query.assignedBranch = branchId;
+  try {
+    const { branchId } = req.query;
 
-  const trainers = await User.find(query)
-    .select('fullName email phone assignedBranch createdAt')
-    .populate('assignedBranch', 'branchName branchCode city');
+    const query = { role: 'trainer' };
+    if (branchId) query.assignedBranch = branchId;
 
-  const trainerReport = await Promise.all(
-    trainers.map(async (trainer) => {
-      const assignedMembers = await User.countDocuments({ assignedTrainer: trainer._id });
-      const activeMembers = await User.countDocuments({
-        assignedTrainer: trainer._id,
-        membershipStatus: 'active',
-      });
+    console.log('[getTrainerReport] Fetching trainers with query:', query);
 
-      const members = await User.find({ assignedTrainer: trainer._id }).select('fullName email membershipStatus');
+    const trainers = await User.find(query)
+      .select('fullName email phone assignedBranch createdAt')
+      .populate('assignedBranch', 'branchName branchCode city');
 
-      return {
-        trainerId: trainer._id,
-        fullName: trainer.fullName,
-        email: trainer.email,
-        phone: trainer.phone,
-        branch: trainer.assignedBranch
-          ? {
-              id: trainer.assignedBranch._id,
-              name: trainer.assignedBranch.branchName,
-              code: trainer.assignedBranch.branchCode,
-              city: trainer.assignedBranch.city,
-            }
-          : null,
-        joinedDate: trainer.createdAt,
-        metrics: {
-          totalAssignedMembers: assignedMembers,
-          activeMembers,
-          inactiveMembers: assignedMembers - activeMembers,
-          retentionRate: assignedMembers > 0 ? ((activeMembers / assignedMembers) * 100).toFixed(2) : 0,
-        },
-        members: members.map((m) => ({
-          id: m._id,
-          fullName: m.fullName,
-          email: m.email,
-          status: m.membershipStatus,
-        })),
-      };
-    })
-  );
+    console.log('[getTrainerReport] Found trainers:', trainers.length);
 
-  ApiResponse.success(
-    res,
-    {
+    const trainerReport = await Promise.all(
+      trainers.map(async (trainer) => {
+        try {
+          const assignedMembers = await User.countDocuments({ assignedTrainer: trainer._id });
+          const activeMembers = await User.countDocuments({
+            assignedTrainer: trainer._id,
+            membershipStatus: 'active',
+          });
+
+          const members = await User.find({ assignedTrainer: trainer._id }).select('fullName email membershipStatus');
+
+          return {
+            trainerId: trainer._id,
+            fullName: trainer.fullName || 'N/A',
+            email: trainer.email || 'N/A',
+            phone: trainer.phone || 'N/A',
+            branch: trainer.assignedBranch
+              ? {
+                  id: trainer.assignedBranch._id,
+                  name: trainer.assignedBranch.branchName,
+                  code: trainer.assignedBranch.branchCode,
+                  city: trainer.assignedBranch.city,
+                }
+              : null,
+            joinedDate: trainer.createdAt,
+            metrics: {
+              totalAssignedMembers: assignedMembers,
+              activeMembers,
+              inactiveMembers: assignedMembers - activeMembers,
+              retentionRate: assignedMembers > 0 ? ((activeMembers / assignedMembers) * 100).toFixed(2) : 0,
+            },
+            members: members.map((m) => ({
+              id: m._id,
+              fullName: m.fullName,
+              email: m.email,
+              status: m.membershipStatus,
+            })),
+          };
+        } catch (err) {
+          console.error(`[getTrainerReport] Error processing trainer ${trainer._id}:`, err.message);
+          // Return a safe default object
+          return {
+            trainerId: trainer._id,
+            fullName: trainer.fullName || 'N/A',
+            email: trainer.email || 'N/A',
+            phone: trainer.phone || 'N/A',
+            branch: null,
+            joinedDate: trainer.createdAt,
+            metrics: {
+              totalAssignedMembers: 0,
+              activeMembers: 0,
+              inactiveMembers: 0,
+              retentionRate: 0,
+            },
+            members: [],
+          };
+        }
+      })
+    );
+
+    console.log('[getTrainerReport] Generated report for', trainerReport.length, 'trainers');
+
+    const response = {
       summary: {
         totalTrainers: trainers.length,
-        totalAssignedMembers: trainerReport.reduce((sum, t) => sum + t.metrics.totalAssignedMembers, 0),
+        totalAssignedMembers: trainerReport.reduce((sum, t) => sum + (t.metrics?.totalAssignedMembers || 0), 0),
       },
-      report: trainerReport.sort((a, b) => b.metrics.totalAssignedMembers - a.metrics.totalAssignedMembers),
-    },
-    'Trainer report generated successfully'
-  );
+      report: trainerReport.sort((a, b) => (b.metrics?.totalAssignedMembers || 0) - (a.metrics?.totalAssignedMembers || 0)),
+    };
+
+    console.log('[getTrainerReport] Sending response');
+
+    ApiResponse.success(
+      res,
+      response,
+      'Trainer report generated successfully'
+    );
+  } catch (err) {
+    console.error('[getTrainerReport] Error in trainer report:', err);
+    throw err; // Let asyncHandler catch it
+  }
 });
 
 /**
@@ -598,97 +781,157 @@ const getTrainerReport = asyncHandler(async (req, res) => {
  * @access  Private (Super Admin only)
  */
 const getBranchPerformanceReport = asyncHandler(async (req, res) => {
-  const { status } = req.query;
+  console.log('[getBranchPerformanceReport] Starting branch performance report generation');
+  console.log('[getBranchPerformanceReport] Query params:', req.query);
 
-  const query = {};
-  if (status && status !== 'all') query.branchStatus = status;
+  try {
+    const { status } = req.query;
 
-  const branches = await Branch.find(query);
+    const query = {};
+    if (status && status !== 'all') query.branchStatus = status;
 
-  const branchReport = await Promise.all(
-    branches.map(async (branch) => {
-      const totalUsers = await User.countDocuments({ assignedBranch: branch._id });
-      const activeMembers = await User.countDocuments({
-        assignedBranch: branch._id,
-        membershipStatus: 'active',
-      });
-      const trainers = await User.countDocuments({
-        assignedBranch: branch._id,
-        role: 'trainer',
-      });
+    console.log('[getBranchPerformanceReport] Fetching branches with query:', query);
 
-      const subscriptions = await Subscription.countDocuments({ branch: branch._id });
-      const activeSubscriptions = await Subscription.countDocuments({
-        branch: branch._id,
-        status: 'active',
-      });
+    const branches = await Branch.find(query);
 
-      const transactions = await Transaction.find({
-        branch: branch._id,
-        status: 'success',
-      });
-      const revenue = transactions.reduce((sum, t) => sum + t.amount, 0);
+    console.log('[getBranchPerformanceReport] Found branches:', branches.length);
 
-      const monthlyTransactions = await Transaction.find({
-        branch: branch._id,
-        status: 'success',
-        createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
-      });
-      const monthlyRevenue = monthlyTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const branchReport = await Promise.all(
+      branches.map(async (branch) => {
+        try {
+          const totalUsers = await User.countDocuments({ assignedBranch: branch._id });
+          const activeMembers = await User.countDocuments({
+            assignedBranch: branch._id,
+            membershipStatus: 'active',
+          });
+          const trainers = await User.countDocuments({
+            assignedBranch: branch._id,
+            role: 'trainer',
+          });
 
-      return {
-        branchId: branch._id,
-        branchName: branch.branchName,
-        branchCode: branch.branchCode,
-        location: {
-          address: branch.address,
-          city: branch.city,
-          state: branch.state,
-          pincode: branch.pincode,
-        },
-        contact: {
-          phone: branch.contactNumber,
-          email: branch.email,
-        },
-        status: branch.branchStatus,
-        metrics: {
-          users: {
-            total: totalUsers,
-            activeMembers,
-            trainers,
-          },
-          subscriptions: {
-            total: subscriptions,
-            active: activeSubscriptions,
-          },
-          revenue: {
-            total: revenue,
-            monthly: monthlyRevenue,
-          },
-          capacity: branch.capacity,
-          occupancyRate: branch.capacity > 0 ? ((totalUsers / branch.capacity) * 100).toFixed(2) : 0,
-        },
-        facilities: branch.facilities,
-      };
-    })
-  );
+          const subscriptions = await Subscription.countDocuments({ branch: branch._id });
+          const activeSubscriptions = await Subscription.countDocuments({
+            branch: branch._id,
+            status: 'active',
+          });
 
-  const totalRevenue = branchReport.reduce((sum, b) => sum + b.metrics.revenue.total, 0);
-  const totalUsers = branchReport.reduce((sum, b) => sum + b.metrics.users.total, 0);
+          const transactions = await Transaction.find({
+            branch: branch._id,
+            status: 'success',
+          });
+          const revenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-  ApiResponse.success(
-    res,
-    {
+          const monthlyTransactions = await Transaction.find({
+            branch: branch._id,
+            status: 'success',
+            createdAt: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+          });
+          const monthlyRevenue = monthlyTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+          const capacity = branch.capacity || 1;
+          const occupancyRate = capacity > 0 ? ((totalUsers / capacity) * 100).toFixed(2) : 0;
+
+          return {
+            branchId: branch._id,
+            branchName: branch.branchName || 'N/A',
+            branchCode: branch.branchCode || 'N/A',
+            location: {
+              address: branch.address || 'N/A',
+              city: branch.city || 'N/A',
+              state: branch.state || 'N/A',
+              pincode: branch.pincode || 'N/A',
+            },
+            contact: {
+              phone: branch.contactNumber || 'N/A',
+              email: branch.email || 'N/A',
+            },
+            status: branch.branchStatus || 'active',
+            metrics: {
+              users: {
+                total: totalUsers,
+                activeMembers,
+                trainers,
+              },
+              subscriptions: {
+                total: subscriptions,
+                active: activeSubscriptions,
+              },
+              revenue: {
+                total: revenue,
+                monthly: monthlyRevenue,
+              },
+              capacity: capacity,
+              occupancyRate: parseFloat(occupancyRate),
+            },
+            facilities: branch.facilities || [],
+          };
+        } catch (err) {
+          console.error(`[getBranchPerformanceReport] Error processing branch ${branch._id}:`, err.message);
+          // Return a safe default object
+          return {
+            branchId: branch._id,
+            branchName: branch.branchName || 'N/A',
+            branchCode: branch.branchCode || 'N/A',
+            location: {
+              address: branch.address || 'N/A',
+              city: branch.city || 'N/A',
+              state: branch.state || 'N/A',
+              pincode: branch.pincode || 'N/A',
+            },
+            contact: {
+              phone: branch.contactNumber || 'N/A',
+              email: branch.email || 'N/A',
+            },
+            status: branch.branchStatus || 'active',
+            metrics: {
+              users: {
+                total: 0,
+                activeMembers: 0,
+                trainers: 0,
+              },
+              subscriptions: {
+                total: 0,
+                active: 0,
+              },
+              revenue: {
+                total: 0,
+                monthly: 0,
+              },
+              capacity: branch.capacity || 0,
+              occupancyRate: 0,
+            },
+            facilities: branch.facilities || [],
+          };
+        }
+      })
+    );
+
+    console.log('[getBranchPerformanceReport] Generated report for', branchReport.length, 'branches');
+
+    const totalRevenue = branchReport.reduce((sum, b) => sum + (b.metrics?.revenue?.total || 0), 0);
+    const totalUsers = branchReport.reduce((sum, b) => sum + (b.metrics?.users?.total || 0), 0);
+
+    const response = {
       summary: {
         totalBranches: branches.length,
         totalRevenue,
         totalUsers,
         averageRevenuePerBranch: branches.length > 0 ? (totalRevenue / branches.length).toFixed(2) : 0,
       },
-      report: branchReport.sort((a, b) => b.metrics.revenue.total - a.metrics.revenue.total),
-    },
-    'Branch performance report generated successfully'
-  );
+      report: branchReport.sort((a, b) => (b.metrics?.revenue?.total || 0) - (a.metrics?.revenue?.total || 0)),
+    };
+
+    console.log('[getBranchPerformanceReport] Sending response');
+
+    ApiResponse.success(
+      res,
+      response,
+      'Branch performance report generated successfully'
+    );
+  } catch (err) {
+    console.error('[getBranchPerformanceReport] Error in branch performance report:', err);
+    throw err; // Let asyncHandler catch it
+  }
 });
 
 module.exports = {
